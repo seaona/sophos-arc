@@ -86,11 +86,12 @@ export default function App() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div>
             <h1 className="section-title">
-              Habit Tracker
+              Sophos Arc
             </h1>
 
-            <p className="subtle-text mt-2 text-lg">
-              Build consistency one day at a time.
+            <p className="subtle-text mt-3 text-lg max-w-3xl leading-relaxed">
+              A personal wisdom system that tracks your habits, readings,
+              creations, and progress to build a meaningful life arc.
             </p>
           </div>
 
