@@ -90,8 +90,10 @@ export default function App() {
             </h1>
 
             <p className="subtle-text mt-3 text-lg max-w-3xl leading-relaxed">
-              A personal wisdom system that tracks your habits, readings,
-              creations, and progress to build a meaningful life arc.
+              A personal system for tracking habits, creations, and progress toward a meaningful life arc.
+            </p>
+            <p className="mt-3 text-sm text-zinc-500 dark:text-zinc-400">
+              Your data stays private, local, and fully under your control in your browser.
             </p>
           </div>
 
