@@ -7,6 +7,7 @@ import StatsBar from './components/StatsBar';
 import ThemeToggle from './components/ThemeToggle';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import type { Habit, HabitLogs } from './types/habit';
+import RestoreButton from './components/RestoreButton';
 
 export default function App() {
   const [habits, setHabits] = useLocalStorage<Habit[]>(
@@ -98,6 +99,11 @@ export default function App() {
               habits={habits}
               logs={logs}
             />
+
+              <RestoreButton
+                setHabits={setHabits}
+                setLogs={setLogs}
+              />
 
             <ThemeToggle
               darkMode={darkMode}
