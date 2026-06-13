@@ -9,6 +9,7 @@ type BackupData = {
   habits: Habit[];
   logs: HabitLogs;
   exportedAt?: string;
+  goals?: unknown[];
 };
 
 export default function RestoreButton({
@@ -33,6 +34,13 @@ export default function RestoreButton({
         if (!data.habits || !data.logs) {
           alert('Invalid backup file');
           return;
+        }
+
+        if (data.goals) {
+          localStorage.setItem(
+            'goals',
+            JSON.stringify(data.goals)
+          );
         }
 
         setHabits(data.habits);

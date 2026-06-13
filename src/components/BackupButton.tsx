@@ -10,8 +10,13 @@ export default function BackupButton({
   logs
 }: Props) {
   function handleBackup() {
+    const goals = JSON.parse(
+      localStorage.getItem('goals') || '[]'
+    );
+
     const data = {
       habits,
+      goals,
       logs,
       exportedAt: new Date().toISOString()
     };
