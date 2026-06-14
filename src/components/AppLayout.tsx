@@ -1,21 +1,27 @@
 import type { ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from './Navbar';
 
 type Props = {
   children: ReactNode;
 };
 
-export default function AppLayout({
-  children
-}: Props) {
+export default function AppLayout({ children }: Props) {
+  const navigate = useNavigate();
+
   return (
     <div className="page-container bg-stone-100 dark:bg-zinc-950">
       <div className="content-container">
         <div className="mb-10">
-            <div className="flex items-center justify-between">
-                <h1 className="section-title">
-                Sophos Arc
-                </h1>
+          <div className="flex items-center justify-between">
+            {/* Clickable Title - Goes to Home */}
+            <button
+              onClick={() => navigate('/')}
+              className="section-title hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors cursor-pointer text-left"
+            >
+              Sophos Arc
+            </button>
+
             <Navbar />
           </div>
 
