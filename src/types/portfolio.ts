@@ -33,3 +33,9 @@ type Props = {
     id: string
   ) => void;
 };
+
+export type PortfolioAllocation = {
+  id: string;
+  name: string;
+  percentage: number;
+};

@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 import { useLocalStorage } from './useLocalStorage';
 
-import type { PortfolioElement } from '../types/portfolio';
+import type { PortfolioElement, PortfolioAllocation } from '../types/portfolio';
 
 export function usePortfolio() {
   const [portfolio, setPortfolio] =
@@ -11,9 +11,12 @@ export function usePortfolio() {
       []
     );
 
-  const [year, setYear] = useState(
-    new Date().getFullYear()
-  );
+    const [allocations, setAllocations] = useLocalStorage<PortfolioAllocation[]>(
+        'financial-allocations',
+        []
+        );
+
+    const [year, setYear] = useState(new Date().getFullYear());
 
   function addElement(name: string) {
     setPortfolio((prev) => [
@@ -123,6 +126,31 @@ export function usePortfolio() {
     );
   }
 
+  function addAllocation(name: string) {
+    setAllocations((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        name: name.trim(),
+        percentage: 0,
+      },
+    ]);
+  }
+
+  function updateAllocation(id: string, name: string, percentage: number) {
+    setAllocations((prev) =>
+      prev.map((a) =>
+        a.id === id ? { ...a, name, percentage: Math.max(0, percentage) } : a
+      )
+    );
+  }
+
+  function deleteAllocation(id: string) {
+    setAllocations((prev) => prev.filter((a) => a.id !== id));
+  }
+
+  const totalAllocation = allocations.reduce((sum, a) => sum + a.percentage, 0);
+
   return {
     portfolio,
     year,
@@ -130,6 +158,11 @@ export function usePortfolio() {
     addElement,
     deleteElement,
     renameElement,
-    updateValue
+    updateValue,
+    allocations,
+    totalAllocation,
+    addAllocation,
+    updateAllocation,
+    deleteAllocation,
   };
 }
