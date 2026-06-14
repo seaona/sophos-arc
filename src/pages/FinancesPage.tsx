@@ -8,6 +8,9 @@ import PortfolioTable from '../components/finances/PortfolioTable';
 
 import { usePortfolio } from '../hooks/usePortfolio';
 import PortfolioChart from '../components/finances/PortfolioChart';
+import { useState } from 'react';
+import type { PortfolioElement } from '../types/portfolio';
+import ConfirmModal from '../components/ConfirmModal';
 
 export default function FinancesPage() {
   const {
@@ -42,6 +45,14 @@ export default function FinancesPage() {
 
   const gain =
     totalValue - totalInvested;
+
+  const [
+    elementToDelete,
+    setElementToDelete
+  ] =
+    useState<PortfolioElement | null>(
+      null
+    );
 
   return (
     <AppLayout>
@@ -110,9 +121,39 @@ export default function FinancesPage() {
             year={year}
             updateValue={updateValue}
             renameElement={renameElement}
-            deleteElement={deleteElement}
+            deleteElement={(id) => {
+              const element =
+                portfolio.find(
+                  (p) => p.id === id
+                );
+
+              if (element) {
+                setElementToDelete(
+                  element
+                );
+              }
+            }}
         />
       </div>
+      <ConfirmModal
+        open={
+          elementToDelete !== null
+        }
+        title="Delete Portfolio Element"
+        message={`Delete "${elementToDelete?.name}"?`}
+        onCancel={() =>
+          setElementToDelete(null)
+        }
+        onConfirm={() => {
+          if (elementToDelete) {
+            deleteElement(
+              elementToDelete.id
+            );
+          }
+
+          setElementToDelete(null);
+        }}
+      />
     </AppLayout>
   );
 }

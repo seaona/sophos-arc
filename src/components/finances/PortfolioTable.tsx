@@ -12,18 +12,38 @@ type Props = {
     field: 'invested' | 'value',
     amount: number
   ) => void;
+
+  renameElement: (
+    id: string,
+    name: string
+  ) => void;
+
+  deleteElement: (
+    id: string
+  ) => void;
 };
 
 export default function PortfolioTable({
   portfolio,
   year,
-  updateValue
+  updateValue,
+  renameElement,
+  deleteElement
 }: Props) {
-  const months =
-    Array.from(
-      { length: 12 },
-      (_, i) => i + 1
-    );
+  const months = [
+    'JAN',
+    'FEB',
+    'MAR',
+    'APR',
+    'MAY',
+    'JUN',
+    'JUL',
+    'AUG',
+    'SEP',
+    'OCT',
+    'NOV',
+    'DEC'
+    ];
 
   return (
     <div className="overflow-x-auto">
@@ -37,19 +57,22 @@ export default function PortfolioTable({
                 Element
                 </th>
 
-                {months.map((month) => (
-                <th
-                    key={month}
-                    colSpan={2}
-                    className="
-                    text-center
-                    border-b
-                    pb-2
-                    "
-                >
-                    {month}
-                </th>
-                ))}
+                {months.map(
+                    (monthName, index) => (
+                        <th
+                        key={monthName}
+                        colSpan={2}
+                        className="
+                            text-center
+                            border-b
+                            pb-2
+                            font-semibold
+                        "
+                        >
+                        {monthName}
+                        </th>
+                    )
+                    )}
             </tr>
 
             <tr>
@@ -123,7 +146,9 @@ export default function PortfolioTable({
                     </td>
 
                 {months.map(
-                  (month) => {
+                    (_, index) => {
+                        const month =
+                        index + 1;
                     const data =
                       element
                         .monthlyValues?.[
