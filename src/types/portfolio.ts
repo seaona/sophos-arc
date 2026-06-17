@@ -39,3 +39,19 @@ export type PortfolioAllocation = {
   name: string;
   percentage: number;
 };
+
+export type Mortgage = {
+  id: string;
+  loanAmount: number;
+  annualInterestRate: number;
+  totalYears: number;
+  startDate: string; // YYYY-MM
+};
+
+export type MonthlyMortgageData = {
+  month: number;
+  extraPayment: number;
+  extraInstallments: number;
+  savedThisMonth: number;
+  remainingInstallments: number;
+};

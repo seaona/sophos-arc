@@ -10,6 +10,8 @@ import {
   PieChart,
   Pie,
   Cell,
+  LineChart,
+  Line,
 } from 'recharts';
 
 import type { PortfolioElement, PortfolioAllocation } from '../../types/portfolio';
@@ -23,6 +25,14 @@ type AllocationChartProps = {
   allocations: PortfolioAllocation[];
 };
 
+type MortgageLineChartProps = {
+  data: any[];
+};
+
+type MortgageBarChartProps = {
+  data: any[];
+};
+
 // Reused colors
 const COLORS = [
   '#14b8a6', '#3b82f6', '#8b5cf6', '#f59e0b',
@@ -31,7 +41,7 @@ const COLORS = [
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-// Main Portfolio Evolution Chart
+// ==================== MAIN PORTFOLIO CHART ====================
 export default function PortfolioChart({ portfolio, year }: PortfolioChartProps) {
   const data = MONTHS.map((monthName, index) => {
     const month = index + 1;
@@ -68,8 +78,7 @@ export default function PortfolioChart({ portfolio, year }: PortfolioChartProps)
   );
 }
 
-// components/finances/PortfolioChart.tsx
-
+// ==================== ALLOCATION PIE CHART ====================
 export function PortfolioAllocationChart({ allocations }: AllocationChartProps) {
   const validData = allocations
     .filter((a) => a.percentage > 0)
@@ -90,7 +99,7 @@ export function PortfolioAllocationChart({ allocations }: AllocationChartProps) 
   }
 
   return (
-    <div className="h-[380px] w-full">   {/* ← More robust height */}
+    <div className="h-[380px] w-full">
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Pie
@@ -109,6 +118,61 @@ export function PortfolioAllocationChart({ allocations }: AllocationChartProps) 
           </Pie>
           <Tooltip formatter={(value: number) => [`${value}%`, '']} />
         </PieChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+// ==================== MORTGAGE CHARTS ====================
+export function MortgageRemainingChart({ data }: MortgageLineChartProps) {
+  const values = data.map(d => d.remainingInstallments).filter(v => v > 0);
+  const minValue = values.length ? Math.min(...values) : 300;
+  const maxValue = values.length ? Math.max(...values) : 400;
+
+  const yMin = Math.max(0, Math.floor(minValue * 0.95));
+  const yMax = Math.ceil(maxValue * 1.05);
+
+  return (
+    <div className="h-[380px]">
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={data}>
+          <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
+          <XAxis dataKey="monthName" tickLine={false} />
+          <YAxis 
+            domain={[yMin, yMax]} 
+            tickCount={8}
+            allowDecimals={false}
+          />
+          <Tooltip formatter={(value: number) => [value, "Remaining Installments"]} />
+          <Legend />
+          <Line
+            type="monotone"
+            dataKey="remainingInstallments"
+            stroke="#3b82f6"
+            strokeWidth={4}
+            dot={{ r: 6, fill: "#3b82f6", strokeWidth: 2, stroke: "#fff" }}
+            activeDot={{ r: 8 }}
+            name="Remaining Installments"
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+export function MortgageExtraSavingsChart({ data }: MortgageBarChartProps) {
+  return (
+    <div className="h-[380px]">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data}>
+          <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
+          <XAxis dataKey="monthName" />
+          <YAxis />
+          <Tooltip />
+          <Legend />
+          <Bar dataKey="extraPayment" fill="#14b8a6" name="Extra Payment (€)" />
+          <Bar dataKey="savedThisMonth" fill="#f59e0b" name="Saved (€)" />
+        </BarChart>
       </ResponsiveContainer>
     </div>
   );
