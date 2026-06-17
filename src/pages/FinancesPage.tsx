@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import AppLayout from '../components/AppLayout';
-import MonthNavigator from '../components/MonthNavigator';
+import YearNavigator from '../components/goals/YearNavigator';
 import AddPortfolioElementForm from '../components/finances/AddPortfolioElementForm';
 import PortfolioTable from '../components/finances/PortfolioTable';
 import PortfolioChart, { 
@@ -11,7 +11,6 @@ import PortfolioChart, {
 import ConfirmModal from '../components/ConfirmModal';
 import { usePortfolio } from '../hooks/usePortfolio';
 import { useMortgage } from '../hooks/useMortgage';
-import type { MonthlyMortgageData } from '../types/portfolio';
 
 export default function FinancesPage() {
   const {
@@ -36,7 +35,7 @@ export default function FinancesPage() {
     updateMonthlyData,
   } = useMortgage();
 
-  // FIXED: Better calculation - sum across all months of the year
+  // Totals across all months of the year
   const totalInvested = portfolio.reduce((sum, el) => {
     const yearData = el.monthlyValues?.[year] || {};
     return sum + Object.values(yearData).reduce((s, m) => s + (m.invested || 0), 0);
@@ -51,9 +50,6 @@ export default function FinancesPage() {
 
   const [elementToDelete, setElementToDelete] = useState<any>(null);
   const [newAllocName, setNewAllocName] = useState('');
-
-  const currentDate = new Date(year, 0, 1);
-  const handleDateChange = (date: Date) => setYear(date.getFullYear());
 
   // Mortgage data for current year
   const currentYearMonthly = Array.from({ length: 12 }, (_, i) => {
@@ -76,11 +72,8 @@ export default function FinancesPage() {
 
   return (
     <AppLayout>
-      <MonthNavigator 
-        currentDate={currentDate} 
-        setCurrentDate={handleDateChange} 
-        mode="year" 
-      />
+      <YearNavigator year={year} setYear={setYear} />
+
       {/* Summary Cards */}
       <div className="grid md:grid-cols-3 gap-4 mb-8">
         <div className="glass-card p-6">
@@ -105,16 +98,14 @@ export default function FinancesPage() {
         <PortfolioChart portfolio={portfolio} year={year} />
       </div>
 
-      {/* Portfolio Table + Add Form */}
+      {/* Portfolio Elements */}
       <div className="glass-card p-8 mb-8">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold">Portfolio Elements</h2>
         </div>
-
         <div className="mb-6">
           <AddPortfolioElementForm onAdd={addElement} />
         </div>
-
         <PortfolioTable
           portfolio={portfolio}
           year={year}
@@ -127,7 +118,7 @@ export default function FinancesPage() {
         />
       </div>
 
-      {/* Financial Strategy - Moved after table */}
+      {/* Financial Strategy */}
       <div className="glass-card p-8 mb-8">
         <h2 className="text-xl font-semibold mb-6">Financial Strategy</h2>
         <div className="grid lg:grid-cols-2 gap-10 items-start">

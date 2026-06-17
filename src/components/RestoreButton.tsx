@@ -1,26 +1,6 @@
-import type { Habit, HabitLogs } from '../types/habit';
-
-type Props = {
-  setHabits: React.Dispatch<React.SetStateAction<Habit[]>>;
-  setLogs: React.Dispatch<React.SetStateAction<HabitLogs>>;
-};
-
-type BackupData = {
-  habits: Habit[];
-  logs: HabitLogs;
-  exportedAt?: string;
-  goals?: unknown[];
-};
-
-export default function RestoreButton({
-  setHabits,
-  setLogs
-}: Props) {
-  function handleUpload(
-    event: React.ChangeEvent<HTMLInputElement>
-  ) {
+export default function RestoreButton() {
+  function handleUpload(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
-
     if (!file) return;
 
     const reader = new FileReader();
@@ -28,27 +8,19 @@ export default function RestoreButton({
     reader.onload = (e) => {
       try {
         const text = e.target?.result as string;
+        const data = JSON.parse(text);
 
-        const data: BackupData = JSON.parse(text);
+        // Restore every key from the backup
+        Object.keys(data).forEach((key) => {
+          if (key !== 'exportedAt' && data[key] !== null) {
+            localStorage.setItem(key, JSON.stringify(data[key]));
+          }
+        });
 
-        if (!data.habits || !data.logs) {
-          alert('Invalid backup file');
-          return;
-        }
-
-        if (data.goals) {
-          localStorage.setItem(
-            'goals',
-            JSON.stringify(data.goals)
-          );
-        }
-
-        setHabits(data.habits);
-        setLogs(data.logs);
-
-        alert('Backup restored successfully');
-      } catch {
-        alert('Error reading backup file');
+        alert('✅ All data restored successfully!\n\nPlease refresh the page.');
+        // window.location.reload();   // Uncomment if you want automatic refresh
+      } catch (err) {
+        alert('Error reading backup file. Please use a valid backup.');
       }
     };
 
@@ -56,14 +28,8 @@ export default function RestoreButton({
   }
 
   return (
-    <label
-      className="
-        modern-button
-        cursor-pointer
-      "
-    >
-      Upload Data
-
+    <label className="modern-button cursor-pointer">
+      Restore All Data
       <input
         type="file"
         accept=".json"

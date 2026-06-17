@@ -1,11 +1,9 @@
 import { useState } from "react";
 import AddHabitForm from "../components/AddHabitForm";
 import AppLayout from "../components/AppLayout";
-import BackupButton from "../components/BackupButton";
 import ConfirmModal from "../components/ConfirmModal";
 import HabitGrid from "../components/HabitGrid";
 import MonthNavigator from "../components/MonthNavigator";
-import RestoreButton from "../components/RestoreButton";
 import StatsBar from "../components/StatsBar";
 import ThemeToggle from "../components/ThemeToggle";
 import { useHabits } from "../hooks/useHabits";
@@ -22,99 +20,67 @@ export default function HabitsPage() {
     addHabit,
     deleteHabit,
     toggleDay,
-    setHabits,
-    setLogs
   } = useHabits();
 
-   const [darkMode, setDarkMode] =
-    useLocalStorage<boolean>(
-      'habit-tracker-theme',
-      false
-    );
+  const [darkMode, setDarkMode] = useLocalStorage<boolean>(
+    'habit-tracker-theme',
+    false
+  );
 
-  const [goals] =
-    useLocalStorage<Goal[]>(
-      'goals',
-      []
-    );
+  const [goals] = useLocalStorage<Goal[]>('goals', []);
 
-  const [habitToDelete, setHabitToDelete] =
-    useState<Habit | null>(null);
+  const [habitToDelete, setHabitToDelete] = useState<Habit | null>(null);
 
   function toggleTheme() {
     setDarkMode(!darkMode);
   }
 
   return (
-   <AppLayout>
-       <div className="flex items-center gap-3 justify-end mb-6">
-         <BackupButton
-           habits={habits}
-           logs={logs}
-         />
-   
-         <RestoreButton
-           setHabits={setHabits}
-           setLogs={setLogs}
-         />
-   
-         <ThemeToggle
-           darkMode={darkMode}
-           toggleTheme={toggleTheme}
-         />
-       </div>
-   
-       <MonthNavigator
-         currentDate={currentDate}
-         setCurrentDate={setCurrentDate}
-       />
-   
-       <div className="glass-card p-8">
-         <StatsBar
-           habits={habits}
-           logs={logs}
-           currentDate={currentDate}
-         />
-       </div>
-   
-       <AddHabitForm
-         onAddHabit={addHabit}
-         goals={goals}
-       />
-   
-       <div className="glass-card p-8">
-         <HabitGrid
-           goals={goals}
-           habits={habits}
-           logs={logs}
-           currentDate={currentDate}
-           toggleDay={toggleDay}
-             deleteHabit={(habitId) => {
-              const habit = habits.find(
-                (h) => h.id === habitId
-              );
+    <AppLayout>
+      {/* Only Theme Toggle in top right */}
+      <div className="flex justify-end mb-6">
+        <ThemeToggle darkMode={darkMode} toggleTheme={toggleTheme} />
+      </div>
 
-              if (habit) {
-                setHabitToDelete(habit);
-              }
-            }}
-         />
-       </div>
-       <ConfirmModal
-          open={habitToDelete !== null}
-          title="Delete Habit"
-          message={`Delete "${habitToDelete?.name}"?`}
-          onCancel={() =>
-            setHabitToDelete(null)
-          }
-          onConfirm={() => {
-            if (habitToDelete) {
-              deleteHabit(habitToDelete.id);
-            }
+      <MonthNavigator
+        currentDate={currentDate}
+        setCurrentDate={setCurrentDate}
+      />
 
-            setHabitToDelete(null);
+      <div className="glass-card p-8">
+        <StatsBar
+          habits={habits}
+          logs={logs}
+          currentDate={currentDate}
+        />
+      </div>
+
+      <AddHabitForm onAddHabit={addHabit} goals={goals} />
+
+      <div className="glass-card p-8">
+        <HabitGrid
+          goals={goals}
+          habits={habits}
+          logs={logs}
+          currentDate={currentDate}
+          toggleDay={toggleDay}
+          deleteHabit={(habitId) => {
+            const habit = habits.find((h) => h.id === habitId);
+            if (habit) setHabitToDelete(habit);
           }}
         />
-     </AppLayout>
-  )
+      </div>
+
+      <ConfirmModal
+        open={habitToDelete !== null}
+        title="Delete Habit"
+        message={`Delete "${habitToDelete?.name}"?`}
+        onCancel={() => setHabitToDelete(null)}
+        onConfirm={() => {
+          if (habitToDelete) deleteHabit(habitToDelete.id);
+          setHabitToDelete(null);
+        }}
+      />
+    </AppLayout>
+  );
 }

@@ -1,54 +1,35 @@
-import type { Habit, HabitLogs } from '../types/habit';
-
-type Props = {
-  habits: Habit[];
-  logs: HabitLogs;
-};
-
-export default function BackupButton({
-  habits,
-  logs
-}: Props) {
+export default function BackupButton() {
   function handleBackup() {
-    const goals = JSON.parse(
-      localStorage.getItem('goals') || '[]'
-    );
-
-    const data = {
-      habits,
-      goals,
-      logs,
-      exportedAt: new Date().toISOString()
+    const data: any = {
+      exportedAt: new Date().toISOString(),
     };
 
-    const json = JSON.stringify(data, null, 2);
-
-    const blob = new Blob([json], {
-      type: 'application/json'
+    // Backup ALL localStorage keys automatically
+    Object.keys(localStorage).forEach(key => {
+      try {
+        data[key] = JSON.parse(localStorage.getItem(key) || 'null');
+      } catch {
+        data[key] = localStorage.getItem(key);
+      }
     });
 
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
 
     const link = document.createElement('a');
-
     const today = new Date().toISOString().split('T')[0];
 
     link.href = url;
-    link.download = `habit-tracker-backup-${today}.json`;
-
+    link.download = `sophos-arc-backup-${today}.json`;
     link.click();
 
     URL.revokeObjectURL(url);
   }
 
   return (
-    <button
-      onClick={handleBackup}
-      className="
-        modern-button
-      "
-    >
-      Backup Data
+    <button onClick={handleBackup} className="modern-button">
+      Backup All Data
     </button>
   );
 }
