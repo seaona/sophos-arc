@@ -90,27 +90,26 @@ export function PortfolioAllocationChart({ allocations }: AllocationChartProps) 
 
   if (validData.length === 0) {
     return (
-      <div className="h-[360px] flex flex-col items-center justify-center text-zinc-400 border border-dashed border-zinc-300 dark:border-zinc-700 rounded-3xl">
-        <div className="text-6xl mb-4 opacity-50">📊</div>
-        <p className="text-lg font-medium">No allocations yet</p>
-        <p className="text-sm mt-1">Add categories and percentages on the right</p>
+      <div className="h-[320px] flex flex-col items-center justify-center text-zinc-400 border border-dashed border-zinc-300 dark:border-zinc-700 rounded-2xl">
+        <div className="text-5xl mb-3 opacity-50">📊</div>
+        <p>No allocations yet</p>
       </div>
     );
   }
 
   return (
-    <div className="h-[380px] w-full">
+    <div className="w-full h-[320px]">
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Pie
             data={validData}
             cx="50%"
             cy="50%"
-            innerRadius={88}
-            outerRadius={138}
+            innerRadius={80}
+            outerRadius={130}
             dataKey="value"
             labelLine={false}
-            label={({ name, value }) => `${name}\n${value}%`}
+            label={({ name, value }) => `${name} ${value}%`}
           >
             {validData.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={entry.fill} />

@@ -71,3 +71,34 @@ export function getHabitProgressForMonth(
       100
   );
 }
+
+/**
+ * Returns the cumulative % progress of a habit from Jan 1 up to the end of a given month.
+ */
+export function getHabitProgressUpToMonth(
+  habitId: string,
+  logs: HabitLogs,
+  year: number,
+  endMonth: number // 0 = January, 11 = December
+): number {
+  const habitLogs = logs[habitId] || {};
+  let completedDays = 0;
+  let totalDays = 0;
+
+  // Loop from January (0) to the target month
+  for (let m = 0; m <= endMonth; m++) {
+    const daysInMonth = new Date(year, m + 1, 0).getDate();
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      totalDays++;
+
+      const dateStr = `${year}-${String(m + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+      if (habitLogs[dateStr]) {
+        completedDays++;
+      }
+    }
+  }
+
+  return totalDays === 0 ? 0 : Math.round((completedDays / totalDays) * 100);
+}

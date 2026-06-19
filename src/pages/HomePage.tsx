@@ -19,6 +19,10 @@ export default function HomePage() {
   const { portfolio, year: portfolioYear } = usePortfolio();
   const { goals, year: goalsYear, setYear } = useGoals();
 
+  const currentMonthName = currentDate.toLocaleString('default', { 
+    month: 'long' 
+  });
+
   const [darkMode, setDarkMode] = useLocalStorage<boolean>('habit-tracker-theme', false);
 
   function toggleTheme() {
@@ -27,16 +31,17 @@ export default function HomePage() {
 
   return (
     <AppLayout>
-      {/* Top Bar with Global Actions */}
-      <div className="flex items-center justify-between mb-8">
+      {/* Top Bar - Now responsive */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-4xl font-bold tracking-tight">Welcome back</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Welcome back</h1>
           <p className="text-zinc-500 dark:text-zinc-400 text-lg">
             Here's an overview of your progress this year.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        {/* Actions - wrap on very small screens */}
+        <div className="flex items-center gap-2 flex-wrap">
           <BackupButton />
           <RestoreButton />
           <ThemeToggle darkMode={darkMode} toggleTheme={toggleTheme} />
@@ -74,27 +79,46 @@ export default function HomePage() {
 
       {/* Content Sections */}
       <div className="grid lg:grid-cols-2 gap-8">
+        {/* Habits */}
         <div className="glass-card p-8">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold">Monthly Habit Progress</h2>
-            <NavLink to="/habits" className="text-sm text-blue-600 hover:underline">View all →</NavLink>
+            <div>
+              <h2 className="text-xl font-semibold">Monthly Habit Progress</h2>
+              <p className="text-sm text-zinc-500">
+                Habit completion percentage for {currentMonthName}
+              </p>
+            </div>
+            <NavLink to="/habits" className="text-sm text-blue-600 hover:underline">
+              View all →
+            </NavLink>
           </div>
           <StatsBar habits={habits} logs={logs} currentDate={currentDate} />
         </div>
 
+        {/* Goals */}
         <div className="glass-card p-8">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-semibold">Goal Progress {goalsYear}</h2>
-            <NavLink to="/goals" className="text-sm text-blue-600 hover:underline">View all →</NavLink>
+            <NavLink to="/goals" className="text-sm text-blue-600 hover:underline">
+              View all →
+            </NavLink>
           </div>
-          <GoalsProgressChart goals={goals} habits={habits} logs={logs} year={goalsYear} />
+          <GoalsProgressChart 
+            goals={goals} 
+            habits={habits} 
+            logs={logs} 
+            year={goalsYear} 
+          />
         </div>
       </div>
 
-      <div className="glass-card p-8">
+      {/* Portfolio */}
+      <div className="glass-card p-8 mt-8">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold">Portfolio Overview {portfolioYear}</h2>
-          <NavLink to="/finances" className="text-sm text-blue-600 hover:underline">Full Finances →</NavLink>
+          <NavLink to="/finances" className="text-sm text-blue-600 hover:underline">
+            Full Finances →
+          </NavLink>
         </div>
         <PortfolioChart portfolio={portfolio} year={portfolioYear} />
       </div>

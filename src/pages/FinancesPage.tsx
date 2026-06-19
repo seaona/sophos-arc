@@ -103,9 +103,7 @@ export default function FinancesPage() {
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold">Portfolio Elements</h2>
         </div>
-        <div className="mb-6">
-          <AddPortfolioElementForm onAdd={addElement} />
-        </div>
+        <AddPortfolioElementForm onAdd={addElement} />
         <PortfolioTable
           portfolio={portfolio}
           year={year}
@@ -121,12 +119,15 @@ export default function FinancesPage() {
       {/* Financial Strategy */}
       <div className="glass-card p-8 mb-8">
         <h2 className="text-xl font-semibold mb-6">Financial Strategy</h2>
-        <div className="grid lg:grid-cols-2 gap-10 items-start">
-          <div className="flex flex-col items-center">
+
+        <div className="grid lg:grid-cols-2 gap-8 items-start">
+          
+          {/* Left: Allocation Chart */}
+          <div>
             <div className="w-full">
               <PortfolioAllocationChart allocations={allocations} />
             </div>
-            <div className="mt-6 text-center">
+            <div className="mt-4 text-center">
               <span className="text-sm text-zinc-500">Total Allocated: </span>
               <span className={`font-semibold ${totalAllocation === 100 ? 'text-emerald-600' : 'text-amber-600'}`}>
                 {totalAllocation}%
@@ -134,21 +135,60 @@ export default function FinancesPage() {
             </div>
           </div>
 
+          {/* Right: Allocations + Add Form */}
           <div className="space-y-4">
             {allocations.map((alloc) => (
-              <div key={alloc.id} className="flex items-center gap-3 bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800">
-                <input value={alloc.name} onChange={(e) => updateAllocation(alloc.id, e.target.value, alloc.percentage)} className="modern-input flex-1" />
+              <div 
+                key={alloc.id} 
+                className="flex items-center gap-3 p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-800/60"
+              >
+                <input 
+                  value={alloc.name} 
+                  onChange={(e) => updateAllocation(alloc.id, e.target.value, alloc.percentage)} 
+                  className="modern-input flex-1" 
+                />
                 <div className="flex items-center gap-2 w-28">
-                  <input type="number" value={alloc.percentage} onChange={(e) => updateAllocation(alloc.id, alloc.name, Number(e.target.value))} className="modern-input w-20 text-center" />
+                  <input 
+                    type="number" 
+                    value={alloc.percentage} 
+                    onChange={(e) => updateAllocation(alloc.id, alloc.name, Number(e.target.value))} 
+                    className="modern-input w-20 text-center" 
+                  />
                   <span className="text-zinc-400">%</span>
                 </div>
-                <button onClick={() => deleteAllocation(alloc.id)} className="text-zinc-400 hover:text-red-500 p-2">🗑️</button>
+                <button 
+                  onClick={() => deleteAllocation(alloc.id)} 
+                  className="text-zinc-400 hover:text-red-500 p-2"
+                >
+                  🗑️
+                </button>
               </div>
             ))}
 
-            <div className="flex gap-2">
-              <input value={newAllocName} onChange={(e) => setNewAllocName(e.target.value)} placeholder="New allocation category..." className="modern-input flex-1" onKeyDown={(e) => { if (e.key === 'Enter') { addAllocation(newAllocName); setNewAllocName(''); } }} />
-              <button onClick={() => { addAllocation(newAllocName); setNewAllocName(''); }} disabled={!newAllocName.trim()} className="modern-button whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed">Add</button>
+            {/* Add New */}
+            <div className="flex flex-col sm:flex-row gap-2 pt-2">
+              <input 
+                value={newAllocName} 
+                onChange={(e) => setNewAllocName(e.target.value)} 
+                placeholder="New allocation category..." 
+                className="modern-input flex-1"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    addAllocation(newAllocName);
+                    setNewAllocName('');
+                  }
+                }} 
+              />
+              <button 
+                onClick={() => {
+                  addAllocation(newAllocName);
+                  setNewAllocName('');
+                }} 
+                disabled={!newAllocName.trim()} 
+                className="modern-button whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Add
+              </button>
             </div>
           </div>
         </div>

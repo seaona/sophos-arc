@@ -5,7 +5,6 @@ import ConfirmModal from "../components/ConfirmModal";
 import HabitGrid from "../components/HabitGrid";
 import MonthNavigator from "../components/MonthNavigator";
 import StatsBar from "../components/StatsBar";
-import ThemeToggle from "../components/ThemeToggle";
 import { useHabits } from "../hooks/useHabits";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import type { Goal } from "../types/goal";
@@ -22,26 +21,12 @@ export default function HabitsPage() {
     toggleDay,
   } = useHabits();
 
-  const [darkMode, setDarkMode] = useLocalStorage<boolean>(
-    'habit-tracker-theme',
-    false
-  );
-
   const [goals] = useLocalStorage<Goal[]>('goals', []);
 
   const [habitToDelete, setHabitToDelete] = useState<Habit | null>(null);
 
-  function toggleTheme() {
-    setDarkMode(!darkMode);
-  }
-
   return (
     <AppLayout>
-      {/* Only Theme Toggle in top right */}
-      <div className="flex justify-end mb-6">
-        <ThemeToggle darkMode={darkMode} toggleTheme={toggleTheme} />
-      </div>
-
       <MonthNavigator
         currentDate={currentDate}
         setCurrentDate={setCurrentDate}

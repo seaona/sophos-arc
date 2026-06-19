@@ -11,7 +11,7 @@ export default function AppLayout({ children }: Props) {
 
   return (
     <div className="page-container bg-stone-100 dark:bg-zinc-950 min-h-screen">
-      <div className="content-container max-w-[1400px] mx-auto px-6 py-8">
+      <div className="content-container max-w-[1200px] mx-auto px-6 py-8">
         <div className="mb-10">
           <div className="flex items-center justify-between">
             {/* Clickable Title - Goes to Home */}

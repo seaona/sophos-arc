@@ -23,35 +23,16 @@ export default function AddPortfolioElementForm({
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="
-        glass-card
-        p-6
-        mb-8
-      "
-    >
-      <div className="flex gap-3">
+    <form onSubmit={handleSubmit} className="mb-6">
+      <div className="flex flex-col sm:flex-row gap-3">
         <input
           value={name}
-          onChange={(e) =>
-            setName(
-              e.target.value
-            )
-          }
-          placeholder="Portfolio element"
-          className="
-            modern-input
-            flex-1
-          "
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Portfolio element name"
+          className="modern-input flex-1"
         />
-
-        <button
-          className="
-            modern-button
-          "
-        >
-          Add
+        <button type="submit" className="modern-button whitespace-nowrap">
+          Add Element
         </button>
       </div>
     </form>
