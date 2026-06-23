@@ -8,13 +8,13 @@ export function useGoals() {
 
   const [year, setYear] = useState(new Date().getFullYear());
 
-function addGoal(title: string) {
+function addGoal(title: string, type: 'health' | 'finance' | 'personal' | 'custom' = 'personal') {
   const newGoal: Goal = {
     id: crypto.randomUUID(),
     title: title.trim(),
-    year: year,                    // current selected year
+    year,
     createdAt: new Date().toISOString(),
-    type: 'personal',              // default type
+    type,                    // ← Now supports type
     habitIds: [],
     milestones: [],
     itemWeights: {},

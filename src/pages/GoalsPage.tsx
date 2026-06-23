@@ -21,14 +21,18 @@ export default function GoalsPage() {
   } = useGoals();
 
   const { habits, logs } = useHabits();
-
   const [newGoalTitle, setNewGoalTitle] = useState('');
+  const [newGoalType, setNewGoalType] = useState<'health' | 'finance' | 'personal' | 'custom'>('personal');
 
   const handleAddGoal = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newGoalTitle.trim()) return;
-    addGoal(newGoalTitle);
+
+    // We need to update addGoal in useGoals to accept type
+    addGoal(newGoalTitle, newGoalType);
+
     setNewGoalTitle('');
+    setNewGoalType('personal'); // reset to default
   };
 
   return (
@@ -46,15 +50,27 @@ export default function GoalsPage() {
 
       {/* Add Goal Form */}
       <form onSubmit={handleAddGoal} className="glass-card p-6 mb-8">
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-3">
           <input
             type="text"
             value={newGoalTitle}
             onChange={(e) => setNewGoalTitle(e.target.value)}
-            placeholder="Add new goal..."
+            placeholder="Goal title..."
             className="modern-input flex-1"
           />
-          <button type="submit" className="modern-button">
+
+          <select
+            value={newGoalType}
+            onChange={(e) => setNewGoalType(e.target.value as any)}
+            className="modern-input w-full sm:w-44"
+          >
+            <option value="personal">Personal</option>
+            <option value="health">Health</option>
+            <option value="finance">Finance</option>
+            <option value="custom">Custom</option>
+          </select>
+
+          <button type="submit" className="modern-button whitespace-nowrap">
             Add Goal
           </button>
         </div>
