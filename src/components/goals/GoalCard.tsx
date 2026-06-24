@@ -8,10 +8,12 @@ type Props = {
   goal: Goal;
   habits: Habit[];
   logs: HabitLogs;
-  onAddMilestone: (goalId: string, title: string, weight: number, month?: number) => void;
+  onAddMilestone: (goalId: string, title: string, weight?: number, month?: number) => void;
   onToggleMilestone: (goalId: string, milestoneId: string) => void;
   onDeleteMilestone: (goalId: string, milestoneId: string) => void;
   onUpdateMilestone: (goalId: string, milestoneId: string, updates: Partial<Milestone>) => void;
+  onUpdateWeight?: (goalId: string, itemId: string, weight: number) => void;
+  onAddHabit?: (name: string, goalId: string) => void;   // ← Add this
 };
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -24,9 +26,11 @@ export default function GoalCard({
   onToggleMilestone,
   onDeleteMilestone,
   onUpdateMilestone,
+  onAddHabit
 }: Props) {
   const goalHabits = habits.filter((h) => h.goalId === goal.id);
   const progress = calculateGoalProgress(goal, habits, logs);
+  const [newHabitName, setNewHabitName] = useState('');
 
   const [showMilestoneForm, setShowMilestoneForm] = useState(false);
   const [newMilestoneTitle, setNewMilestoneTitle] = useState('');
@@ -85,6 +89,37 @@ export default function GoalCard({
           </div>
         </div>
       )}
+
+      {onAddHabit && (
+      <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-700">
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={newHabitName}
+            onChange={(e) => setNewHabitName(e.target.value)}
+            placeholder="New habit name..."
+            className="modern-input flex-1 text-sm"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && newHabitName.trim()) {
+                onAddHabit(newHabitName.trim(), goal.id);
+                setNewHabitName('');
+              }
+            }}
+          />
+          <button
+            onClick={() => {
+              if (newHabitName.trim()) {
+                onAddHabit(newHabitName.trim(), goal.id);
+                setNewHabitName('');
+              }
+            }}
+            className="modern-button text-sm px-4"
+          >
+            Add
+          </button>
+        </div>
+      </div>
+    )}
 
       {/* Milestones */}
       <div>

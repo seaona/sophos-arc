@@ -16,11 +16,12 @@ export default function GoalsPage() {
     addMilestone,
     toggleMilestone,
     deleteMilestone,
-    updateMilestone,           // ← Add this
+    updateMilestone,
     updateItemWeight,
   } = useGoals();
 
-  const { habits, logs } = useHabits();
+  const { habits, logs, addHabit } = useHabits(); // ← Add addHabit here
+
   const [newGoalTitle, setNewGoalTitle] = useState('');
   const [newGoalType, setNewGoalType] = useState<'health' | 'finance' | 'personal' | 'custom'>('personal');
 
@@ -28,11 +29,9 @@ export default function GoalsPage() {
     e.preventDefault();
     if (!newGoalTitle.trim()) return;
 
-    // We need to update addGoal in useGoals to accept type
     addGoal(newGoalTitle, newGoalType);
-
     setNewGoalTitle('');
-    setNewGoalType('personal'); // reset to default
+    setNewGoalType('personal');
   };
 
   return (
@@ -58,7 +57,6 @@ export default function GoalsPage() {
             placeholder="Goal title..."
             className="modern-input flex-1"
           />
-
           <select
             value={newGoalType}
             onChange={(e) => setNewGoalType(e.target.value as any)}
@@ -69,7 +67,6 @@ export default function GoalsPage() {
             <option value="finance">Finance</option>
             <option value="custom">Custom</option>
           </select>
-
           <button type="submit" className="modern-button whitespace-nowrap">
             Add Goal
           </button>
@@ -88,8 +85,9 @@ export default function GoalsPage() {
               onAddMilestone={addMilestone}
               onToggleMilestone={toggleMilestone}
               onDeleteMilestone={deleteMilestone}
-              onUpdateMilestone={updateMilestone}     // ← Pass it here
+              onUpdateMilestone={updateMilestone}
               onUpdateWeight={updateItemWeight}
+              onAddHabit={addHabit}           // ← Pass addHabit here
             />
           ))
         ) : (

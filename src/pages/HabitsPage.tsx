@@ -40,8 +40,6 @@ export default function HabitsPage() {
         />
       </div>
 
-      <AddHabitForm onAddHabit={addHabit} goals={goals} />
-
       <div className="glass-card p-8">
         <HabitGrid
           goals={goals}

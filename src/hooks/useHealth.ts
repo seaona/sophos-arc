@@ -52,6 +52,20 @@ export function useHealth() {
       .filter((log) => log.metricId === metricId)
       .sort((a, b) => b.date.localeCompare(a.date))[0];
 
+
+    const deleteLog = (logId: string) => {
+    setLogs((prev) => prev.filter((log) => log.id !== logId));
+    };
+
+    // Delete a custom metric completely (definition + all its logs)
+const deleteCustomMetric = (metricId: string) => {
+  // Remove all logs for this metric
+  setLogs((prev) => prev.filter((log) => log.metricId !== metricId));
+
+  // Remove the metric from custom metrics
+  setCustomMetrics((prev) => prev.filter((m) => m.id !== metricId));
+};
+
   return {
     metrics: activeMetrics,
     dailyMetrics,
@@ -59,7 +73,9 @@ export function useHealth() {
     logs,
     addCustomMetric,
     saveLog,
+    deleteLog,
     getLogsByMetric,
     getLatestLog,
+    deleteCustomMetric
   };
 }
