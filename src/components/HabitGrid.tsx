@@ -11,7 +11,6 @@ type Props = {
   logs: HabitLogs;
   currentDate: Date;
   toggleDay: (habitId: string, date: string) => void;
-  deleteHabit: (habitId: string) => void;
 };
 
 export default function HabitGrid({
@@ -20,7 +19,6 @@ export default function HabitGrid({
   logs,
   currentDate,
   toggleDay,
-  deleteHabit
 }: Props) {
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -93,9 +91,6 @@ export default function HabitGrid({
                     toggleDay={
                       toggleDay
                     }
-                    deleteHabit={
-                      deleteHabit
-                    }
                     progress={getHabitProgress(
                       habit.id,
                       logs,
@@ -140,9 +135,6 @@ export default function HabitGrid({
                   logs={logs}
                   toggleDay={
                     toggleDay
-                  }
-                  deleteHabit={
-                    deleteHabit
                   }
                   progress={getHabitProgress(
                     habit.id,

@@ -27,11 +27,13 @@ function addGoal(title: string, type: 'health' | 'finance' | 'personal' | 'custo
     setGoals((prev) => prev.filter((g) => g.id !== id));
   }
 
-  function updateGoal(id: string, title: string) {
+  function editGoal(goalId: string, newTitle: string) {
     setGoals((prev) =>
-      prev.map((g) => (g.id === id ? { ...g, title } : g))
+        prev.map((goal) =>
+        goal.id === goalId ? { ...goal, title: newTitle } : goal
+        )
     );
-  }
+    }
 
   // Goals for current year
   const currentYearGoals = goals.filter((g) => g.year === year);
@@ -134,7 +136,7 @@ function updateItemWeight(goalId: string, itemId: string, weight: number) {
     setYear,
     addGoal,
     deleteGoal,
-    updateGoal,
+    editGoal,
     addMilestone,
     toggleMilestone,
     updateMilestone,

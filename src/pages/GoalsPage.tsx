@@ -6,6 +6,7 @@ import GoalsProgressChart from '../components/goals/GoalsProgressChart';
 
 import { useGoals } from '../hooks/useGoals';
 import { useHabits } from '../hooks/useHabits';
+import MilestoneTimeline from '../components/goals/MilestoneTimeline';
 
 export default function GoalsPage() {
   const {
@@ -18,9 +19,11 @@ export default function GoalsPage() {
     deleteMilestone,
     updateMilestone,
     updateItemWeight,
+    editGoal,           // ← Add this (we'll implement it in the hook)
+    deleteGoal,         // ← Add this (we'll implement it in the hook)
   } = useGoals();
 
-  const { habits, logs, addHabit } = useHabits(); // ← Add addHabit here
+  const { habits, logs, addHabit, editHabit, deleteHabit } = useHabits();
 
   const [newGoalTitle, setNewGoalTitle] = useState('');
   const [newGoalType, setNewGoalType] = useState<'health' | 'finance' | 'personal' | 'custom'>('personal');
@@ -46,6 +49,8 @@ export default function GoalsPage() {
           year={year} 
         />
       </div>
+
+      <MilestoneTimeline goals={goals} />
 
       {/* Add Goal Form */}
       <form onSubmit={handleAddGoal} className="glass-card p-6 mb-8">
@@ -87,7 +92,11 @@ export default function GoalsPage() {
               onDeleteMilestone={deleteMilestone}
               onUpdateMilestone={updateMilestone}
               onUpdateWeight={updateItemWeight}
-              onAddHabit={addHabit}           // ← Pass addHabit here
+              onAddHabit={addHabit}
+              onEditHabit={editHabit}
+              onDeleteHabit={deleteHabit}
+              onEditGoal={editGoal}           // ← Pass edit goal
+              onDeleteGoal={deleteGoal}       // ← Pass delete goal
             />
           ))
         ) : (

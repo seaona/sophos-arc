@@ -2,7 +2,8 @@ import { useState } from 'react';
 import type { Goal, Milestone } from '../../types/goal';
 import type { Habit } from '../../types/habit';
 import type { HabitLogs } from '../../types/habit';
-import { calculateGoalProgress } from '../../utils/goalProgress';
+import { getHabitProgress } from '../../utils/progress';
+import ConfirmModal from '../ConfirmModal';
 
 type Props = {
   goal: Goal;
@@ -13,10 +14,12 @@ type Props = {
   onDeleteMilestone: (goalId: string, milestoneId: string) => void;
   onUpdateMilestone: (goalId: string, milestoneId: string, updates: Partial<Milestone>) => void;
   onUpdateWeight?: (goalId: string, itemId: string, weight: number) => void;
-  onAddHabit?: (name: string, goalId: string) => void;   // ← Add this
+  onAddHabit?: (name: string, goalId: string) => void;
+  onEditHabit?: (habitId: string, newName: string) => void;
+  onDeleteHabit?: (habitId: string) => void;
+  onEditGoal?: (goalId: string, newTitle: string) => void;
+  onDeleteGoal?: (goalId: string) => void;
 };
-
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 export default function GoalCard({
   goal,
@@ -26,153 +29,232 @@ export default function GoalCard({
   onToggleMilestone,
   onDeleteMilestone,
   onUpdateMilestone,
-  onAddHabit
+  onUpdateWeight,
+  onAddHabit,
+  onEditHabit,
+  onDeleteHabit,
+  onEditGoal,
+  onDeleteGoal,
 }: Props) {
-  const goalHabits = habits.filter((h) => h.goalId === goal.id);
-  const progress = calculateGoalProgress(goal, habits, logs);
   const [newHabitName, setNewHabitName] = useState('');
 
-  const [showMilestoneForm, setShowMilestoneForm] = useState(false);
+  // Editing states
+  const [editingHabitId, setEditingHabitId] = useState<string | null>(null);
+  const [editingHabitName, setEditingHabitName] = useState('');
+  const [editingGoal, setEditingGoal] = useState(false);
+  const [editingGoalTitle, setEditingGoalTitle] = useState(goal.title);
+
+  // Delete confirmation states
+  const [habitToDelete, setHabitToDelete] = useState<string | null>(null);
+  const [milestoneToDelete, setMilestoneToDelete] = useState<string | null>(null);
+  const [goalToDelete, setGoalToDelete] = useState(false);
+
+  const goalHabits = habits.filter((h) => h.goalId === goal.id);
+
   const [newMilestoneTitle, setNewMilestoneTitle] = useState('');
-  const [newMilestoneWeight, setNewMilestoneWeight] = useState(0);
-  const [newMilestoneMonth, setNewMilestoneMonth] = useState<number | undefined>(undefined);
+  const [newMilestoneMonth, setNewMilestoneMonth] = useState<number | ''>('');
 
-  const handleAddMilestone = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newMilestoneTitle.trim()) return;
+  // Yearly Progress Calculation
+  const progress = goalHabits.length > 0
+    ? Math.round(
+        goalHabits.reduce((sum, habit) => {
+          return sum + getHabitProgress(habit.id, logs, goal.year);
+        }, 0) / goalHabits.length
+      )
+    : 0;
 
-    onAddMilestone(
-      goal.id,
-      newMilestoneTitle.trim(),
-      newMilestoneWeight,
-      newMilestoneMonth
-    );
+  const handleAddHabit = () => {
+    if (!newHabitName.trim() || !onAddHabit) return;
+    onAddHabit(newHabitName.trim(), goal.id);
+    setNewHabitName('');
+  };
 
+  const handleAddMilestone = () => {
+    if (!newMilestoneTitle.trim() || !newMilestoneMonth) return;
+
+    onAddMilestone(goal.id, newMilestoneTitle.trim(), undefined, newMilestoneMonth);
+    
+    // Reset form
     setNewMilestoneTitle('');
-    setNewMilestoneWeight(0);
-    setNewMilestoneMonth(undefined);
-    setShowMilestoneForm(false);
+    setNewMilestoneMonth('');
   };
 
   return (
     <div className="glass-card p-6">
+      {/* Goal Header with Edit/Delete */}
       <div className="flex justify-between items-start mb-4">
-        <div>
-          <h3 className="text-xl font-semibold">{goal.title}</h3>
+        <div className="flex-1">
+          {editingGoal ? (
+            <div className="flex gap-2">
+              <input
+                value={editingGoalTitle}
+                onChange={(e) => setEditingGoalTitle(e.target.value)}
+                className="modern-input flex-1"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    onEditGoal?.(goal.id, editingGoalTitle);
+                    setEditingGoal(false);
+                  }
+                  if (e.key === 'Escape') setEditingGoal(false);
+                }}
+                autoFocus
+              />
+              <button
+                onClick={() => {
+                  onEditGoal?.(goal.id, editingGoalTitle);
+                  setEditingGoal(false);
+                }}
+                className="text-emerald-600 text-sm px-3"
+              >
+                Save
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <h3 className="text-xl font-semibold">{goal.title}</h3>
+              <button
+                onClick={() => setEditingGoal(true)}
+                className="text-zinc-400 hover:text-zinc-600 px-1"
+              >
+                ✎
+              </button>
+              <button
+                onClick={() => setGoalToDelete(true)}
+                className="text-red-400 hover:text-red-600 px-1"
+              >
+                🗑️
+              </button>
+            </div>
+          )}
           <span className="text-sm px-2 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800">
             {goal.type}
           </span>
         </div>
+
         <div className="text-right">
           <div className="text-3xl font-bold">{progress}%</div>
-          <div className="text-xs text-zinc-500">Overall Progress</div>
+          <div className="text-xs text-zinc-500">Yearly Progress</div>
         </div>
       </div>
 
-      {/* Habits */}
-      {goalHabits.length > 0 && (
-        <div className="mb-6">
-          <h4 className="font-medium mb-2 text-sm text-zinc-500">HABITS</h4>
-          <div className="space-y-2">
-            {goalHabits.map((habit) => (
-              <div key={habit.id} className="flex justify-between text-sm">
-                <span>{habit.name}</span>
-                <span className="font-medium">
-                  {calculateGoalProgress(
-                    { ...goal, habitIds: [habit.id] },
-                    habits,
-                    logs
-                  )}%
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* HABITS */}
+      <div className="mb-6">
+        <h4 className="font-medium mb-2 text-sm text-zinc-500">HABITS</h4>
 
-      {onAddHabit && (
-      <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-700">
-        <div className="flex gap-2">
+        <div className="space-y-2">
+          {goalHabits.map((habit) => (
+            <div key={habit.id} className="flex items-center justify-between text-sm">
+              {editingHabitId === habit.id ? (
+                <div className="flex gap-2 flex-1">
+                  <input
+                    value={editingHabitName}
+                    onChange={(e) => setEditingHabitName(e.target.value)}
+                    className="modern-input flex-1 text-sm"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        onEditHabit?.(habit.id, editingHabitName);
+                        setEditingHabitId(null);
+                      }
+                      if (e.key === 'Escape') setEditingHabitId(null);
+                    }}
+                    autoFocus
+                  />
+                  <button
+                    onClick={() => {
+                      onEditHabit?.(habit.id, editingHabitName);
+                      setEditingHabitId(null);
+                    }}
+                    className="text-emerald-600 text-xs px-2"
+                  >
+                    Save
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <span>{habit.name}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-xs">
+                      {getHabitProgress(habit.id, logs, goal.year)}%
+                    </span>
+                    <button
+                      onClick={() => {
+                        setEditingHabitId(habit.id);
+                        setEditingHabitName(habit.name);
+                      }}
+                      className="text-zinc-400 hover:text-zinc-600 px-1"
+                    >
+                      ✎
+                    </button>
+                    <button
+                      onClick={() => setHabitToDelete(habit.id)}
+                      className="text-red-400 hover:text-red-600 px-1"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Add Habit - Always visible inline form */}
+        {onAddHabit && (
+          <div className="mt-3">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newHabitName}
+                onChange={(e) => setNewHabitName(e.target.value)}
+                placeholder="New habit name..."
+                className="modern-input flex-1 text-sm"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleAddHabit();
+                }}
+              />
+              <button onClick={handleAddHabit} className="modern-button text-sm px-4">
+                Add
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* MILESTONES */}
+      <div>
+        <h4 className="font-medium mb-2 text-sm text-zinc-500">MILESTONES</h4>
+
+        {/* Always visible Add Milestone Form */}
+        <div className="flex flex-col sm:flex-row gap-2 mb-4">
           <input
             type="text"
-            value={newHabitName}
-            onChange={(e) => setNewHabitName(e.target.value)}
-            placeholder="New habit name..."
+            value={newMilestoneTitle}
+            onChange={(e) => setNewMilestoneTitle(e.target.value)}
+            placeholder="Milestone title..."
             className="modern-input flex-1 text-sm"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && newHabitName.trim()) {
-                onAddHabit(newHabitName.trim(), goal.id);
-                setNewHabitName('');
-              }
-            }}
           />
-          <button
-            onClick={() => {
-              if (newHabitName.trim()) {
-                onAddHabit(newHabitName.trim(), goal.id);
-                setNewHabitName('');
-              }
-            }}
-            className="modern-button text-sm px-4"
+
+          <select
+            value={newMilestoneMonth}
+            onChange={(e) => setNewMilestoneMonth(e.target.value ? Number(e.target.value) : '')}
+            className="modern-input w-full sm:w-40 text-sm"
+          >
+            <option value="">Select month *</option>
+            {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((month, index) => (
+              <option key={index + 1} value={index + 1}>
+                {month}
+              </option>
+            ))}
+          </select>
+
+          <button 
+            onClick={handleAddMilestone} 
+            disabled={!newMilestoneTitle.trim() || !newMilestoneMonth}
+            className="modern-button text-sm px-6 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
           >
             Add
           </button>
         </div>
-      </div>
-    )}
-
-      {/* Milestones */}
-      <div>
-        <div className="flex justify-between items-center mb-2">
-          <h4 className="font-medium text-sm text-zinc-500">MILESTONES</h4>
-          <button
-            onClick={() => setShowMilestoneForm(!showMilestoneForm)}
-            className="text-xs px-3 py-1 rounded bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700"
-          >
-            {showMilestoneForm ? 'Cancel' : '+ Add Milestone'}
-          </button>
-        </div>
-
-        {/* Inline Add Form */}
-        {showMilestoneForm && (
-          <form onSubmit={handleAddMilestone} className="flex flex-wrap gap-2 mb-4">
-            <input
-              type="text"
-              value={newMilestoneTitle}
-              onChange={(e) => setNewMilestoneTitle(e.target.value)}
-              placeholder="Milestone title"
-              className="modern-input flex-1 min-w-[180px]"
-              autoFocus
-            />
-
-            <select
-              value={newMilestoneMonth ?? ''}
-              onChange={(e) =>
-                setNewMilestoneMonth(e.target.value ? Number(e.target.value) : undefined)
-              }
-              className="modern-input w-28"
-            >
-              <option value="">No month</option>
-              {MONTHS.map((month, index) => (
-                <option key={index + 1} value={index + 1}>
-                  {month}
-                </option>
-              ))}
-            </select>
-
-            <input
-              type="number"
-              value={newMilestoneWeight}
-              onChange={(e) => setNewMilestoneWeight(Number(e.target.value))}
-              placeholder="Weight"
-              className="modern-input w-20 text-center"
-            />
-
-            <button type="submit" className="modern-button">
-              Add
-            </button>
-          </form>
-        )}
 
         {/* Milestones List */}
         {goal.milestones && goal.milestones.length > 0 ? (
@@ -180,7 +262,7 @@ export default function GoalCard({
             {goal.milestones.map((milestone) => (
               <div
                 key={milestone.id}
-                className="flex items-center justify-between p-3 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800"
+                className="flex items-center justify-between p-3 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-sm"
               >
                 <div className="flex items-center gap-3 flex-1">
                   <input
@@ -189,55 +271,24 @@ export default function GoalCard({
                     onChange={() => onToggleMilestone(goal.id, milestone.id)}
                     className="w-4 h-4 accent-emerald-600 cursor-pointer"
                   />
-                  <span className={milestone.achieved ? "line-through text-zinc-400" : ""}>
+                  <span className={milestone.achieved ? 'line-through text-zinc-400' : ''}>
                     {milestone.title}
                   </span>
-                  {milestone.month && (
-                    <span className="text-xs px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
-                      {MONTHS[milestone.month - 1]}
-                    </span>
-                  )}
                 </div>
 
                 <div className="flex items-center gap-2 text-sm">
-                  {/* Month Dropdown (Editable) */}
-                  <select
-                    value={milestone.month ?? ''}
-                    onChange={(e) =>
-                      onUpdateMilestone(goal.id, milestone.id, {
-                        month: e.target.value ? Number(e.target.value) : undefined,
-                      })
-                    }
-                    className="text-xs border rounded px-1 py-0.5 bg-transparent"
-                  >
-                    <option value="">No month</option>
-                    {MONTHS.map((monthName, index) => (
-                      <option key={index + 1} value={index + 1}>
-                        {monthName}
-                      </option>
-                    ))}
-                  </select>
-
-                  {/* Weight */}
-                  <div className="flex items-center gap-1">
-                    <span className="text-xs text-zinc-500">W</span>
-                    <input
-                      type="number"
-                      value={milestone.weight || 0}
-                      onChange={(e) =>
-                        onUpdateMilestone(goal.id, milestone.id, {
-                          weight: Number(e.target.value),
-                        })
-                      }
-                      className="w-12 text-center border rounded px-1 py-0.5 text-sm"
-                    />
-                  </div>
+                  {/* Month Display */}
+                  <span className="text-xs px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
+                    {milestone.month 
+                      ? ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][milestone.month - 1] 
+                      : 'No month'}
+                  </span>
 
                   <button
-                    onClick={() => onDeleteMilestone(goal.id, milestone.id)}
-                    className="text-red-500 hover:text-red-600 px-2 text-lg leading-none"
+                    onClick={() => setMilestoneToDelete(milestone.id)}
+                    className="text-red-400 hover:text-red-600 px-2 text-lg leading-none"
                   >
-                    ×
+                    🗑️
                   </button>
                 </div>
               </div>
@@ -247,6 +298,40 @@ export default function GoalCard({
           <p className="text-sm text-zinc-400 italic">No milestones yet</p>
         )}
       </div>
+
+      {/* Confirm Modals */}
+      <ConfirmModal
+        open={habitToDelete !== null}
+        title="Delete Habit"
+        message="Delete this habit?"
+        onCancel={() => setHabitToDelete(null)}
+        onConfirm={() => {
+          if (habitToDelete) onDeleteHabit?.(habitToDelete);
+          setHabitToDelete(null);
+        }}
+      />
+
+      <ConfirmModal
+        open={milestoneToDelete !== null}
+        title="Delete Milestone"
+        message="Delete this milestone?"
+        onCancel={() => setMilestoneToDelete(null)}
+        onConfirm={() => {
+          if (milestoneToDelete) onDeleteMilestone(goal.id, milestoneToDelete);
+          setMilestoneToDelete(null);
+        }}
+      />
+
+      <ConfirmModal
+        open={goalToDelete}
+        title="Delete Goal"
+        message={`Delete "${goal.title}" and all its data?`}
+        onCancel={() => setGoalToDelete(false)}
+        onConfirm={() => {
+          onDeleteGoal?.(goal.id);
+          setGoalToDelete(false);
+        }}
+      />
     </div>
   );
 }

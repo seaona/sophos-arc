@@ -23,7 +23,6 @@ export default function HabitRow({
   currentDate,
   logs,
   toggleDay,
-  deleteHabit
 }: Props) {
   const year =
     currentDate.getFullYear();
@@ -63,33 +62,6 @@ export default function HabitRow({
           >
             {monthlyProgress}%
           </span>
-
-          <button
-            onClick={() =>
-              deleteHabit(
-                habit.id
-              )
-            }
-            className="
-              h-10
-              w-10
-              rounded-xl
-              flex
-              items-center
-              justify-center
-              bg-white/80
-              dark:bg-zinc-900/80
-              border
-              border-zinc-200
-              dark:border-zinc-800
-              backdrop-blur-sm
-              hover:scale-105
-              transition-all
-            "
-            title="Delete habit"
-          >
-            🗑️
-          </button>
         </div>
       </div>
 
