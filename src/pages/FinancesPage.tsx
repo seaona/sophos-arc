@@ -29,11 +29,14 @@ export default function FinancesPage() {
   } = usePortfolio();
 
   const {
-    mortgage,
-    monthlyData,
-    updateMortgageSetup,
-    updateMonthlyData,
-  } = useMortgage();
+  mortgages,
+  addMortgage,
+  deleteMortgage,
+  updateMortgageSetup,
+  updateMonthlyData,
+  monthlyData,
+  getMonthlyDataForMortgage,
+} = useMortgage();
 
   // Totals across all months of the year
   const totalInvested = portfolio.reduce((sum, el) => {
@@ -195,141 +198,212 @@ export default function FinancesPage() {
       </div>
 
       {/* Mortgage Section */}
-            {/* ==================== MORTGAGE SECTION ==================== */}
-      <div className="glass-card p-8">
-        <h2 className="text-xl font-semibold mb-6">Mortgage</h2>
+      {/* ==================== MORTGAGE SECTION ==================== */}
+      <div className="glass-card p-8 mb-8">
+        <h2 className="text-xl font-semibold mb-6">Mortgages</h2>
 
-        {/* Mortgage Setup */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <div className="glass-card p-5">
-            <div className="text-sm text-zinc-500 mb-1">Loan Amount</div>
-            <input 
-              type="number" 
-              value={mortgage?.loanAmount || ''} 
-              onChange={(e) => updateMortgageSetup({ loanAmount: Number(e.target.value) })} 
-              className="modern-input w-full" 
-              placeholder="250000" 
-            />
-          </div>
-          <div className="glass-card p-5">
-            <div className="text-sm text-zinc-500 mb-1">Interest Rate (%)</div>
-            <input 
-              type="number" 
-              step="0.01" 
-              value={mortgage?.annualInterestRate || ''} 
-              onChange={(e) => updateMortgageSetup({ annualInterestRate: Number(e.target.value) })} 
-              className="modern-input w-full" 
-              placeholder="3.25" 
-            />
-          </div>
-          <div className="glass-card p-5">
-            <div className="text-sm text-zinc-500 mb-1">Term (Years)</div>
-            <input 
-              type="number" 
-              value={mortgage?.totalYears || ''} 
-              onChange={(e) => updateMortgageSetup({ totalYears: Number(e.target.value) })} 
-              className="modern-input w-full" 
-              placeholder="25" 
-            />
-          </div>
-          <div className="glass-card p-5">
-            <div className="text-sm text-zinc-500 mb-1">Start Date</div>
-            <input 
-              type="month" 
-              value={mortgage?.startDate || ''} 
-              onChange={(e) => updateMortgageSetup({ startDate: e.target.value })} 
-              className="modern-input w-full" 
-            />
-          </div>
+        {/* Add New Mortgage Form */}
+        <div className="glass-card p-6 mb-8">
+          <h3 className="font-semibold mb-4">Add New Mortgage</h3>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const form = e.currentTarget;
+              const formData = new FormData(form);
+
+              addMortgage({
+                name: formData.get('name') as string,
+                loanAmount: Number(formData.get('loanAmount')),
+                annualInterestRate: Number(formData.get('annualInterestRate')),
+                totalYears: Number(formData.get('totalYears')),
+                startDate: formData.get('startDate') as string,
+              });
+
+              form.reset();
+            }}
+            className="grid md:grid-cols-2 lg:grid-cols-5 gap-4"
+          >
+            <div>
+              <div className="text-sm text-zinc-500 mb-1">Mortgage Name</div>
+              <input type="text" name="name" placeholder="Main Home" className="modern-input w-full" required />
+            </div>
+            <div>
+              <div className="text-sm text-zinc-500 mb-1">Loan Amount (€)</div>
+              <input type="number" name="loanAmount" className="modern-input w-full" placeholder="250000" required />
+            </div>
+            <div>
+              <div className="text-sm text-zinc-500 mb-1">Interest Rate (%)</div>
+              <input type="number" step="0.01" name="annualInterestRate" className="modern-input w-full" placeholder="3.25" required />
+            </div>
+            <div>
+              <div className="text-sm text-zinc-500 mb-1">Term (Years)</div>
+              <input type="number" name="totalYears" className="modern-input w-full" placeholder="25" required />
+            </div>
+            <div>
+              <div className="text-sm text-zinc-500 mb-1">Start Date</div>
+              <input type="month" name="startDate" className="modern-input w-full" required />
+            </div>
+
+            <div className="lg:col-span-5 flex justify-end mt-2">
+              <button type="submit" className="modern-button">Add Mortgage</button>
+            </div>
+          </form>
         </div>
 
-        {/* Year Summary */}
-        <div className="grid md:grid-cols-4 gap-4 mb-8">
-          <div className="glass-card p-6 text-center">
-            <div className="text-sm text-zinc-500">Remaining Payments</div>
-            <div className="text-3xl font-semibold mt-1">{remainingAtEndOfYear}</div>
-          </div>
-          <div className="glass-card p-6 text-center">
-            <div className="text-sm text-zinc-500">Payments Reduced</div>
-            <div className="text-3xl font-semibold mt-1 text-emerald-600">-{totalReducedThisYear}</div>
-          </div>
-          <div className="glass-card p-6 text-center">
-            <div className="text-sm text-zinc-500">Extra Paid</div>
-            <div className="text-3xl font-semibold mt-1">€{yearExtraPaid.toLocaleString()}</div>
-          </div>
-          <div className="glass-card p-6 text-center">
-            <div className="text-sm text-zinc-500">Total Saved</div>
-            <div className="text-3xl font-semibold mt-1 text-emerald-600">€{yearSaved.toLocaleString()}</div>
-          </div>
-        </div>
+        {/* Mortgages List */}
+        {mortgages.length > 0 ? (
+          mortgages.map((mortgageItem) => {
+            const mortgageMonthlyData = getMonthlyDataForMortgage(mortgageItem.id, year);
 
-        {/* Charts */}
-        <div className="grid lg:grid-cols-2 gap-8 mb-10">
-          <div className="glass-card p-6">
-            <h3 className="font-semibold mb-4">Remaining Installments</h3>
-            <MortgageRemainingChart data={chartData} />
-          </div>
-          <div className="glass-card p-6">
-            <h3 className="font-semibold mb-4">Extra Payments vs Savings</h3>
-            <MortgageExtraSavingsChart data={chartData} />
-          </div>
-        </div>
+            const currentYearMonthly = Array.from({ length: 12 }, (_, i) => {
+              const month = i + 1;
+              const existing = mortgageMonthlyData.find((m) => m.month === month);
+              return (
+                existing || {
+                  mortgageId: mortgageItem.id,
+                  year,
+                  month,
+                  extraPayment: 0,
+                  extraInstallments: 0,
+                  savedThisMonth: 0,
+                  remainingInstallments: 0,
+                }
+              );
+            });
 
-        {/* Monthly Table */}
-        <div className="overflow-auto">
-          <table className="w-full text-sm border-collapse">
-            <thead>
-              <tr>
-                <th className="sticky left-0 p-3 bg-white dark:bg-zinc-900 border-b text-left">Month</th>
-                <th className="p-3 bg-white dark:bg-zinc-900 border-b text-center">Extra Payment (€)</th>
-                <th className="p-3 bg-white dark:bg-zinc-900 border-b text-center">Extra Installments</th>
-                <th className="p-3 bg-white dark:bg-zinc-900 border-b text-center">Saved This Month (€)</th>
-                <th className="p-3 bg-white dark:bg-zinc-900 border-b text-center">Remaining Installments</th>
-              </tr>
-            </thead>
-            <tbody>
-              {currentYearMonthly.map((m) => (
-                <tr key={m.month}>
-                  <td className="sticky left-0 p-3 bg-white dark:bg-zinc-900 font-medium border-b">
-                    {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m.month-1]} {year}
-                  </td>
-                  <td className="p-3 border-b">
-                    <input 
-                      type="number" 
-                      value={m.extraPayment} 
-                      onChange={(e) => updateMonthlyData(m.month, { extraPayment: Number(e.target.value) })} 
-                      className="modern-input w-full text-center" 
-                    />
-                  </td>
-                  <td className="p-3 border-b">
-                    <input 
-                      type="number" 
-                      value={m.extraInstallments} 
-                      onChange={(e) => updateMonthlyData(m.month, { extraInstallments: Number(e.target.value) })} 
-                      className="modern-input w-full text-center" 
-                    />
-                  </td>
-                  <td className="p-3 border-b">
-                    <input 
-                      type="number" 
-                      value={m.savedThisMonth} 
-                      onChange={(e) => updateMonthlyData(m.month, { savedThisMonth: Number(e.target.value) })} 
-                      className="modern-input w-full text-center" 
-                    />
-                  </td>
-                  <td className="p-3 border-b">
-                    <input 
-                      type="number" 
-                      value={m.remainingInstallments} 
-                      onChange={(e) => updateMonthlyData(m.month, { remainingInstallments: Number(e.target.value) })} 
-                      className="modern-input w-full text-center" 
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            const chartData = currentYearMonthly.map((m, i) => ({
+              monthName: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][i],
+              remainingInstallments: m.remainingInstallments,
+              extraPayment: m.extraPayment,
+              savedThisMonth: m.savedThisMonth,
+            }));
+
+            const yearExtraPaid = currentYearMonthly.reduce((sum, m) => sum + m.extraPayment, 0);
+            const yearSaved = currentYearMonthly.reduce((sum, m) => sum + m.savedThisMonth, 0);
+            const totalReducedThisYear = currentYearMonthly.reduce((sum, m) => sum + m.extraInstallments, 0);
+            const remainingAtEndOfYear = currentYearMonthly[11]?.remainingInstallments || 0;
+
+            return (
+              <div key={mortgageItem.id} className="mb-12 border border-zinc-200 dark:border-zinc-700 rounded-2xl p-6">
+                {/* Mortgage Header */}
+                <div className="flex justify-between items-start mb-6">
+                  <div>
+                    <h3 className="text-xl font-semibold">{mortgageItem.name}</h3>
+                    <div className="text-sm text-zinc-500 mt-1">
+                      €{mortgageItem.loanAmount.toLocaleString()} • {mortgageItem.annualInterestRate}% • {mortgageItem.totalYears} years • Started {mortgageItem.startDate}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => deleteMortgage(mortgageItem.id)}
+                    className="text-red-400 hover:text-red-600 p-2"
+                  >
+                    🗑️
+                  </button>
+                </div>
+
+                {/* Year Summary */}
+                <div className="grid md:grid-cols-4 gap-4 mb-8">
+                  <div className="glass-card p-6 text-center">
+                    <div className="text-sm text-zinc-500">Remaining Payments</div>
+                    <div className="text-3xl font-semibold mt-1">{remainingAtEndOfYear}</div>
+                  </div>
+                  <div className="glass-card p-6 text-center">
+                    <div className="text-sm text-zinc-500">Payments Reduced</div>
+                    <div className="text-3xl font-semibold mt-1 text-emerald-600">-{totalReducedThisYear}</div>
+                  </div>
+                  <div className="glass-card p-6 text-center">
+                    <div className="text-sm text-zinc-500">Extra Paid</div>
+                    <div className="text-3xl font-semibold mt-1">€{yearExtraPaid.toLocaleString()}</div>
+                  </div>
+                  <div className="glass-card p-6 text-center">
+                    <div className="text-sm text-zinc-500">Total Saved</div>
+                    <div className="text-3xl font-semibold mt-1 text-emerald-600">€{yearSaved.toLocaleString()}</div>
+                  </div>
+                </div>
+
+                {/* Charts */}
+                <div className="grid lg:grid-cols-2 gap-8 mb-10">
+                  <div className="glass-card p-6">
+                    <h3 className="font-semibold mb-4">Remaining Installments</h3>
+                    <MortgageRemainingChart data={chartData} />
+                  </div>
+                  <div className="glass-card p-6">
+                    <h3 className="font-semibold mb-4">Extra Payments vs Savings</h3>
+                    <MortgageExtraSavingsChart data={chartData} />
+                  </div>
+                </div>
+
+                {/* Monthly Table */}
+                <div className="overflow-auto">
+                  <table className="w-full text-sm border-collapse">
+                    <thead>
+                      <tr>
+                        <th className="sticky left-0 p-3 bg-white dark:bg-zinc-900 border-b text-left">Month</th>
+                        <th className="p-3 bg-white dark:bg-zinc-900 border-b text-center">Extra Payment (€)</th>
+                        <th className="p-3 bg-white dark:bg-zinc-900 border-b text-center">Extra Installments</th>
+                        <th className="p-3 bg-white dark:bg-zinc-900 border-b text-center">Saved This Month (€)</th>
+                        <th className="p-3 bg-white dark:bg-zinc-900 border-b text-center">Remaining Installments</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {currentYearMonthly.map((m) => (
+                        <tr key={m.month}>
+                          <td className="sticky left-0 p-3 bg-white dark:bg-zinc-900 font-medium border-b">
+                            {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m.month-1]} {year}
+                          </td>
+                          <td className="p-3 border-b">
+                            <input
+                              type="number"
+                              value={m.extraPayment}
+                              onChange={(e) =>
+                                updateMonthlyData(mortgageItem.id, year, m.month, { extraPayment: Number(e.target.value) })
+                              }
+                              className="modern-input w-full text-center"
+                            />
+                          </td>
+                          <td className="p-3 border-b">
+                            <input
+                              type="number"
+                              value={m.extraInstallments}
+                              onChange={(e) =>
+                                updateMonthlyData(mortgageItem.id, year, m.month, { extraInstallments: Number(e.target.value) })
+                              }
+                              className="modern-input w-full text-center"
+                            />
+                          </td>
+                          <td className="p-3 border-b">
+                            <input
+                              type="number"
+                              value={m.savedThisMonth}
+                              onChange={(e) =>
+                                updateMonthlyData(mortgageItem.id, year, m.month, { savedThisMonth: Number(e.target.value) })
+                              }
+                              className="modern-input w-full text-center"
+                            />
+                          </td>
+                          <td className="p-3 border-b">
+                            <input
+                              type="number"
+                              value={m.remainingInstallments}
+                              onChange={(e) =>
+                                updateMonthlyData(mortgageItem.id, year, m.month, { remainingInstallments: Number(e.target.value) })
+                              }
+                              className="modern-input w-full text-center"
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          <div className="text-center py-8 text-zinc-500">
+            No mortgages added yet. Use the form above to add one.
+          </div>
+        )}
       </div>
 
       <ConfirmModal

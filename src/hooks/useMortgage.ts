@@ -1,16 +1,17 @@
-// hooks/useMortgage.ts
-import { useState } from 'react';
 import { useLocalStorage } from './useLocalStorage';
 
 export type Mortgage = {
   id: string;
+  name: string;
   loanAmount: number;
-  annualInterestRate: number; // e.g. 3.25
+  annualInterestRate: number;
   totalYears: number;
-  startDate: string; // YYYY-MM
+  startDate: string; // format: "YYYY-MM"
 };
 
-export type MonthlyMortgageData = {
+export type MortgageMonthlyData = {
+  mortgageId: string;
+  year: number;
   month: number;
   extraPayment: number;
   extraInstallments: number;
@@ -19,64 +20,84 @@ export type MonthlyMortgageData = {
 };
 
 export function useMortgage() {
-  const [mortgage, setMortgage] = useLocalStorage<Mortgage | null>(
-    'mortgage',
-    null
-  );
+  const [mortgages, setMortgages] = useLocalStorage<Mortgage[]>('mortgages', []);
+  const [monthlyData, setMonthlyData] = useLocalStorage<MortgageMonthlyData[]>('mortgage-monthly-data', []);
 
-  const [monthlyData, setMonthlyData] = useLocalStorage<MonthlyMortgageData[]>(
-    'mortgage-monthly-data',
-    []
-  );
+  // Add a new mortgage
+  const addMortgage = (mortgage: Omit<Mortgage, 'id'>) => {
+    const newMortgage: Mortgage = {
+      ...mortgage,
+      id: crypto.randomUUID(),
+    };
+    setMortgages((prev) => [...prev, newMortgage]);
+  };
 
-  // Setup mortgage
-  function updateMortgageSetup(data: Partial<Mortgage>) {
-    setMortgage((prev) => ({
-      ...(prev || {
-        id: crypto.randomUUID(),
-        loanAmount: 0,
-        annualInterestRate: 0,
-        totalYears: 0,
-        startDate: `${new Date().getFullYear()}-01`,
-      }),
-      ...data,
-    }));
-  }
+  // Delete a mortgage and all its monthly data
+  const deleteMortgage = (mortgageId: string) => {
+    setMortgages((prev) => prev.filter((m) => m.id !== mortgageId));
+    setMonthlyData((prev) => prev.filter((d) => d.mortgageId !== mortgageId));
+  };
 
-  // Update monthly data for a specific month
-  function updateMonthlyData(month: number, data: Partial<MonthlyMortgageData>) {
+  // Update mortgage setup
+  const updateMortgageSetup = (mortgageId: string, updates: Partial<Omit<Mortgage, 'id'>>) => {
+    setMortgages((prev) =>
+      prev.map((m) =>
+        m.id === mortgageId ? { ...m, ...updates } : m
+      )
+    );
+  };
+
+  // Update monthly data for a specific mortgage + month
+  const updateMonthlyData = (
+    mortgageId: string,
+    year: number,
+    month: number,
+    updates: Partial<Omit<MortgageMonthlyData, 'mortgageId' | 'year' | 'month'>>
+  ) => {
     setMonthlyData((prev) => {
-      const existing = prev.findIndex((m) => m.month === month);
-      const newEntry: MonthlyMortgageData = {
-        month,
-        extraPayment: 0,
-        extraInstallments: 0,
-        savedThisMonth: 0,
-        remainingInstallments: 0,
-        ...prev[existing],
-        ...data,
-      };
+      const existingIndex = prev.findIndex(
+        (d) => d.mortgageId === mortgageId && d.year === year && d.month === month
+      );
 
-      if (existing >= 0) {
+      if (existingIndex !== -1) {
         const updated = [...prev];
-        updated[existing] = newEntry;
+        updated[existingIndex] = {
+          ...updated[existingIndex],
+          ...updates,
+        };
         return updated;
       } else {
-        return [...prev, newEntry].sort((a, b) => a.month - b.month);
+        return [
+          ...prev,
+          {
+            mortgageId,
+            year,
+            month,
+            extraPayment: 0,
+            extraInstallments: 0,
+            savedThisMonth: 0,
+            remainingInstallments: 0,
+            ...updates,
+          },
+        ];
       }
     });
-  }
+  };
 
-  const currentYearData = monthlyData.filter(
-    (m) => Math.floor((m.month - 1) / 12) + new Date(mortgage?.startDate || '2025-01').getFullYear() === 
-          // Simplified: we'll filter properly in the page
-          new Date().getFullYear() // We'll handle year filtering in component
-  );
+  // Get monthly data for a specific mortgage + year
+  const getMonthlyDataForMortgage = (mortgageId: string, year: number) => {
+    return monthlyData.filter(
+      (d) => d.mortgageId === mortgageId && d.year === year
+    );
+  };
 
   return {
-    mortgage,
+    mortgages,
     monthlyData,
+    addMortgage,
+    deleteMortgage,
     updateMortgageSetup,
     updateMonthlyData,
+    getMonthlyDataForMortgage,
   };
 }
