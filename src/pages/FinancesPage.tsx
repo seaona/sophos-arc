@@ -29,49 +29,42 @@ export default function FinancesPage() {
   } = usePortfolio();
 
   const {
-  mortgages,
-  addMortgage,
-  deleteMortgage,
-  updateMortgageSetup,
-  updateMonthlyData,
-  monthlyData,
-  getMonthlyDataForMortgage,
+    mortgages,
+    addMortgage,
+    deleteMortgage,
+    updateMonthlyData,
+    getMonthlyDataForYear,
 } = useMortgage();
 
   // Totals across all months of the year
-  const totalInvested = portfolio.reduce((sum, el) => {
-    const yearData = el.monthlyValues?.[year] || {};
-    return sum + Object.values(yearData).reduce((s, m) => s + (m.invested || 0), 0);
-  }, 0);
+  // Total Invested = Sum of all invested (including Initial/month 0)
+const totalInvested = portfolio.reduce((sum, el) => {
+  const yearData = el.monthlyValues?.[year] || {};
+  return sum + Object.values(yearData).reduce((s, m) => s + (m.invested || 0), 0);
+}, 0);
+
+// Current Value = Sum of the latest available "value" for each element
+const currentValue = portfolio.reduce((sum, el) => {
+  const yearData = el.monthlyValues?.[year] || {};
+  // Get the latest month that has data
+  const latestMonth = Math.max(...Object.keys(yearData).map(Number));
+  const latestValue = yearData[latestMonth]?.value || 0;
+  return sum + latestValue;
+}, 0);
+
+const gain = currentValue - totalInvested;
 
   const totalValue = portfolio.reduce((sum, el) => {
     const yearData = el.monthlyValues?.[year] || {};
     return sum + Object.values(yearData).reduce((s, m) => s + (m.value || 0), 0);
   }, 0);
 
-  const gain = totalValue - totalInvested;
-
   const [elementToDelete, setElementToDelete] = useState<any>(null);
   const [newAllocName, setNewAllocName] = useState('');
 
-  // Mortgage data for current year
-  const currentYearMonthly = Array.from({ length: 12 }, (_, i) => {
-    const month = i + 1;
-    const existing = monthlyData.find((m) => m.month === month);
-    return existing || { month, extraPayment: 0, extraInstallments: 0, savedThisMonth: 0, remainingInstallments: 0 };
-  });
 
-  const chartData = currentYearMonthly.map((m, i) => ({
-    monthName: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][i],
-    remainingInstallments: m.remainingInstallments,
-    extraPayment: m.extraPayment,
-    savedThisMonth: m.savedThisMonth,
-  }));
+  const [expandedTables, setExpandedTables] = useState<Record<string, boolean>>({});
 
-  const yearExtraPaid = currentYearMonthly.reduce((sum, m) => sum + m.extraPayment, 0);
-  const yearSaved = currentYearMonthly.reduce((sum, m) => sum + m.savedThisMonth, 0);
-  const totalReducedThisYear = currentYearMonthly.reduce((sum, m) => sum + m.extraInstallments, 0);
-  const remainingAtEndOfYear = currentYearMonthly[11]?.remainingInstallments || 0;
 
   return (
     <AppLayout>
@@ -80,15 +73,15 @@ export default function FinancesPage() {
       {/* Summary Cards */}
       <div className="grid md:grid-cols-3 gap-4 mb-8">
         <div className="glass-card p-6">
-          <div className="text-sm text-zinc-500 mb-2">Invested (this year)</div>
+          <div className="text-sm text-zinc-500 mb-2">Total Invested</div>
           <div className="text-2xl font-semibold">€{totalInvested.toLocaleString()}</div>
         </div>
         <div className="glass-card p-6">
-          <div className="text-sm text-zinc-500 mb-2">Current Value (this year)</div>
-          <div className="text-2xl font-semibold">€{totalValue.toLocaleString()}</div>
+          <div className="text-sm text-zinc-500 mb-2">Current Portfolio Value</div>
+          <div className="text-2xl font-semibold">€{currentValue.toLocaleString()}</div>
         </div>
         <div className="glass-card p-6">
-          <div className="text-sm text-zinc-500 mb-2">Gain / Loss (this year)</div>
+          <div className="text-sm text-zinc-500 mb-2">Gain / Loss</div>
           <div className={`text-2xl font-semibold ${gain >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
             {gain >= 0 ? '+' : '-'}€{Math.abs(gain).toLocaleString()}
           </div>
@@ -250,26 +243,11 @@ export default function FinancesPage() {
           </form>
         </div>
 
-        {/* Mortgages List */}
+        {/* List of Mortgages */}
         {mortgages.length > 0 ? (
           mortgages.map((mortgageItem) => {
-            const mortgageMonthlyData = getMonthlyDataForMortgage(mortgageItem.id, year);
-
-            const currentYearMonthly = Array.from({ length: 12 }, (_, i) => {
-              const month = i + 1;
-              const existing = mortgageMonthlyData.find((m) => m.month === month);
-              return (
-                existing || {
-                  mortgageId: mortgageItem.id,
-                  year,
-                  month,
-                  extraPayment: 0,
-                  extraInstallments: 0,
-                  savedThisMonth: 0,
-                  remainingInstallments: 0,
-                }
-              );
-            });
+            // Get calculated monthly data (with automatic remainingInstallments)
+            const currentYearMonthly = getMonthlyDataForYear(mortgageItem.id, year);
 
             const chartData = currentYearMonthly.map((m, i) => ({
               monthName: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][i],
@@ -282,6 +260,9 @@ export default function FinancesPage() {
             const yearSaved = currentYearMonthly.reduce((sum, m) => sum + m.savedThisMonth, 0);
             const totalReducedThisYear = currentYearMonthly.reduce((sum, m) => sum + m.extraInstallments, 0);
             const remainingAtEndOfYear = currentYearMonthly[11]?.remainingInstallments || 0;
+
+            // Collapse state for this mortgage
+            const isExpanded = expandedTables[mortgageItem.id] ?? true;
 
             return (
               <div key={mortgageItem.id} className="mb-12 border border-zinc-200 dark:border-zinc-700 rounded-2xl p-6">
@@ -322,9 +303,9 @@ export default function FinancesPage() {
                 </div>
 
                 {/* Charts */}
-                <div className="grid lg:grid-cols-2 gap-8 mb-10">
+                <div className="grid lg:grid-cols-2 gap-8 mb-6">
                   <div className="glass-card p-6">
-                    <h3 className="font-semibold mb-4">Remaining Installments</h3>
+                    <h3 className="font-semibold mb-4">Remaining Payments</h3>
                     <MortgageRemainingChart data={chartData} />
                   </div>
                   <div className="glass-card p-6">
@@ -333,69 +314,81 @@ export default function FinancesPage() {
                   </div>
                 </div>
 
-                {/* Monthly Table */}
-                <div className="overflow-auto">
-                  <table className="w-full text-sm border-collapse">
-                    <thead>
-                      <tr>
-                        <th className="sticky left-0 p-3 bg-white dark:bg-zinc-900 border-b text-left">Month</th>
-                        <th className="p-3 bg-white dark:bg-zinc-900 border-b text-center">Extra Payment (€)</th>
-                        <th className="p-3 bg-white dark:bg-zinc-900 border-b text-center">Extra Installments</th>
-                        <th className="p-3 bg-white dark:bg-zinc-900 border-b text-center">Saved This Month (€)</th>
-                        <th className="p-3 bg-white dark:bg-zinc-900 border-b text-center">Remaining Installments</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {currentYearMonthly.map((m) => (
-                        <tr key={m.month}>
-                          <td className="sticky left-0 p-3 bg-white dark:bg-zinc-900 font-medium border-b">
-                            {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m.month-1]} {year}
-                          </td>
-                          <td className="p-3 border-b">
-                            <input
-                              type="number"
-                              value={m.extraPayment}
-                              onChange={(e) =>
-                                updateMonthlyData(mortgageItem.id, year, m.month, { extraPayment: Number(e.target.value) })
-                              }
-                              className="modern-input w-full text-center"
-                            />
-                          </td>
-                          <td className="p-3 border-b">
-                            <input
-                              type="number"
-                              value={m.extraInstallments}
-                              onChange={(e) =>
-                                updateMonthlyData(mortgageItem.id, year, m.month, { extraInstallments: Number(e.target.value) })
-                              }
-                              className="modern-input w-full text-center"
-                            />
-                          </td>
-                          <td className="p-3 border-b">
-                            <input
-                              type="number"
-                              value={m.savedThisMonth}
-                              onChange={(e) =>
-                                updateMonthlyData(mortgageItem.id, year, m.month, { savedThisMonth: Number(e.target.value) })
-                              }
-                              className="modern-input w-full text-center"
-                            />
-                          </td>
-                          <td className="p-3 border-b">
-                            <input
-                              type="number"
-                              value={m.remainingInstallments}
-                              onChange={(e) =>
-                                updateMonthlyData(mortgageItem.id, year, m.month, { remainingInstallments: Number(e.target.value) })
-                              }
-                              className="modern-input w-full text-center"
-                            />
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                {/* Monthly Data Header with Arrow (Left side) */}
+              {/* Monthly Data Header with Square Toggle Button */}
+                <div className="flex items-center gap-3 mb-4">
+                  <button
+                    onClick={() =>
+                      setExpandedTables((prev) => ({
+                        ...prev,
+                        [mortgageItem.id]: !prev[mortgageItem.id],
+                      }))
+                    }
+                    className="modern-button w-8 h-8 p-0 flex items-center justify-center text-sm"
+                    aria-label="Toggle table"
+                  >
+                    {(expandedTables[mortgageItem.id] ?? true) ? '▼' : '▶'}
+                  </button>
+
+                  <h3 className="font-semibold">Monthly Data</h3>
                 </div>
+
+                {/* Monthly Table (Collapsible) */}
+                {(expandedTables[mortgageItem.id] ?? true) && (
+                  <div className="overflow-auto">
+                    <table className="w-full text-sm border-collapse">
+                        <tr>
+                          <th className="sticky left-0 p-3 bg-white dark:bg-zinc-900 border-b text-left">Month</th>
+                          <th className="p-3 bg-white dark:bg-zinc-900 border-b text-center">Extra Payment (€)</th>
+                          <th className="p-3 bg-white dark:bg-zinc-900 border-b text-center">Extra Payments</th>
+                          <th className="p-3 bg-white dark:bg-zinc-900 border-b text-center">Saved This Month (€)</th>
+                          <th className="p-3 bg-white dark:bg-zinc-900 border-b text-center">Remaining Payments</th>
+                        </tr>
+                      <tbody>
+                        {currentYearMonthly.map((m) => (
+                          <tr key={m.month}>
+                            <td className="sticky left-0 p-3 bg-white dark:bg-zinc-900 font-medium border-b">
+                              {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m.month-1]} {year}
+                            </td>
+                            <td className="p-3 border-b">
+                              <input
+                                type="number"
+                                value={m.extraPayment}
+                                onChange={(e) =>
+                                  updateMonthlyData(mortgageItem.id, year, m.month, { extraPayment: Number(e.target.value) })
+                                }
+                                className="modern-input w-full text-center"
+                              />
+                            </td>
+                            <td className="p-3 border-b">
+                              <input
+                                type="number"
+                                value={m.extraInstallments}
+                                onChange={(e) =>
+                                  updateMonthlyData(mortgageItem.id, year, m.month, { extraInstallments: Number(e.target.value) })
+                                }
+                                className="modern-input w-full text-center"
+                              />
+                            </td>
+                            <td className="p-3 border-b">
+                              <input
+                                type="number"
+                                value={m.savedThisMonth}
+                                onChange={(e) =>
+                                  updateMonthlyData(mortgageItem.id, year, m.month, { savedThisMonth: Number(e.target.value) })
+                                }
+                                className="modern-input w-full text-center"
+                              />
+                            </td>
+                            <td className="p-3 border-b text-center font-medium">
+                              {m.remainingInstallments}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             );
           })

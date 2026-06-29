@@ -6,7 +6,7 @@ export type Mortgage = {
   loanAmount: number;
   annualInterestRate: number;
   totalYears: number;
-  startDate: string; // format: "YYYY-MM"
+  startDate: string; // "YYYY-MM"
 };
 
 export type MortgageMonthlyData = {
@@ -23,48 +23,61 @@ export function useMortgage() {
   const [mortgages, setMortgages] = useLocalStorage<Mortgage[]>('mortgages', []);
   const [monthlyData, setMonthlyData] = useLocalStorage<MortgageMonthlyData[]>('mortgage-monthly-data', []);
 
-  // Add a new mortgage
-  const addMortgage = (mortgage: Omit<Mortgage, 'id'>) => {
+  // ==================== ADD MORTGAGE ====================
+  const addMortgage = (mortgageData: Omit<Mortgage, 'id'>) => {
     const newMortgage: Mortgage = {
-      ...mortgage,
+      ...mortgageData,
       id: crypto.randomUUID(),
     };
+
     setMortgages((prev) => [...prev, newMortgage]);
+
+    // Pre-fill first month of the current year with initial remaining payments
+    const currentYear = new Date().getFullYear();
+    const initialRemaining = calculateInitialRemaining(newMortgage, currentYear);
+
+    // Create default monthly data for current year
+    const initialMonthlyData: MortgageMonthlyData[] = Array.from({ length: 12 }, (_, i) => ({
+      mortgageId: newMortgage.id,
+      year: currentYear,
+      month: i + 1,
+      extraPayment: 0,
+      extraInstallments: 0,
+      savedThisMonth: 0,
+      remainingInstallments: Math.max(0, initialRemaining - i),
+    }));
+
+    setMonthlyData((prev) => [...prev, ...initialMonthlyData]);
   };
 
-  // Delete a mortgage and all its monthly data
+  // ==================== DELETE MORTGAGE ====================
   const deleteMortgage = (mortgageId: string) => {
     setMortgages((prev) => prev.filter((m) => m.id !== mortgageId));
     setMonthlyData((prev) => prev.filter((d) => d.mortgageId !== mortgageId));
   };
 
-  // Update mortgage setup
+  // ==================== UPDATE MORTGAGE SETUP ====================
   const updateMortgageSetup = (mortgageId: string, updates: Partial<Omit<Mortgage, 'id'>>) => {
     setMortgages((prev) =>
-      prev.map((m) =>
-        m.id === mortgageId ? { ...m, ...updates } : m
-      )
+      prev.map((m) => (m.id === mortgageId ? { ...m, ...updates } : m))
     );
   };
 
-  // Update monthly data for a specific mortgage + month
+  // ==================== UPDATE MONTHLY DATA ====================
   const updateMonthlyData = (
     mortgageId: string,
     year: number,
     month: number,
-    updates: Partial<Omit<MortgageMonthlyData, 'mortgageId' | 'year' | 'month'>>
+    updates: Partial<Pick<MortgageMonthlyData, 'extraPayment' | 'extraInstallments' | 'savedThisMonth'>>
   ) => {
     setMonthlyData((prev) => {
-      const existingIndex = prev.findIndex(
+      const index = prev.findIndex(
         (d) => d.mortgageId === mortgageId && d.year === year && d.month === month
       );
 
-      if (existingIndex !== -1) {
+      if (index !== -1) {
         const updated = [...prev];
-        updated[existingIndex] = {
-          ...updated[existingIndex],
-          ...updates,
-        };
+        updated[index] = { ...updated[index], ...updates };
         return updated;
       } else {
         return [
@@ -84,20 +97,72 @@ export function useMortgage() {
     });
   };
 
-  // Get monthly data for a specific mortgage + year
-  const getMonthlyDataForMortgage = (mortgageId: string, year: number) => {
-    return monthlyData.filter(
-      (d) => d.mortgageId === mortgageId && d.year === year
-    );
+  // ==================== GET DATA FOR YEAR (with calculated remaining) ====================
+  const getMonthlyDataForYear = (mortgageId: string, year: number): MortgageMonthlyData[] => {
+    const mortgage = mortgages.find((m) => m.id === mortgageId);
+    if (!mortgage) return [];
+
+    // Get all historical data for this mortgage
+    const allData = monthlyData
+      .filter((d) => d.mortgageId === mortgageId)
+      .sort((a, b) => a.year - b.year || a.month - b.month);
+
+    // Calculate starting remaining for this year
+    let currentRemaining = calculateInitialRemaining(mortgage, year);
+
+    const result: MortgageMonthlyData[] = [];
+
+    for (let month = 1; month <= 12; month++) {
+      const existing = allData.find((d) => d.year === year && d.month === month);
+
+      const extraInstallments = existing?.extraInstallments || 0;
+
+      const remainingThisMonth = Math.max(0, currentRemaining - extraInstallments);
+
+      result.push({
+        mortgageId,
+        year,
+        month,
+        extraPayment: existing?.extraPayment || 0,
+        extraInstallments,
+        savedThisMonth: existing?.savedThisMonth || 0,
+        remainingInstallments: remainingThisMonth,
+      });
+
+      // Prepare for next month
+      currentRemaining = remainingThisMonth - 1;
+    }
+
+    return result;
   };
+
+  // ==================== HELPER: Calculate initial remaining ====================
+  function calculateInitialRemaining(mortgage: Mortgage, targetYear: number): number {
+    const totalPayments = mortgage.totalYears * 12;
+
+    const startDate = new Date(mortgage.startDate);
+    const startYear = startDate.getFullYear();
+    const startMonth = startDate.getMonth() + 1;
+
+    let monthsPassed = 0;
+
+    if (targetYear > startYear) {
+      monthsPassed = (targetYear - startYear) * 12 - (startMonth - 1);
+    } else if (targetYear === startYear) {
+      monthsPassed = 0;
+    } else {
+      return totalPayments; // Before mortgage started
+    }
+
+    return Math.max(0, totalPayments - monthsPassed);
+  }
 
   return {
     mortgages,
-    monthlyData,
     addMortgage,
     deleteMortgage,
     updateMortgageSetup,
     updateMonthlyData,
-    getMonthlyDataForMortgage,
+    getMonthlyDataForYear,
   };
 }
