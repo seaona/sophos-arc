@@ -18,18 +18,32 @@ export function usePortfolio() {
 
     const [year, setYear] = useState(new Date().getFullYear());
 
-  function addElement(name: string) {
-    setPortfolio((prev) => [
-      ...prev,
-      {
-        id: crypto.randomUUID(),
-        name,
-        createdAt:
-          new Date().toISOString(),
-        monthlyValues: {}
-      }
-    ]);
-  }
+  const [categories, setCategories] = useLocalStorage<Category[]>('portfolio-categories', []);
+
+  const addCategory = (name: string) => {
+    const newCategory: Category = {
+      id: crypto.randomUUID(),
+      name: name.trim(),
+    };
+    setCategories((prev) => [...prev, newCategory]);
+  };
+
+  const deleteCategory = (categoryId: string) => {
+    setCategories((prev) => prev.filter((c) => c.id !== categoryId));
+    // Optional: You can later decide what to do with elements in this category
+  };
+
+
+const addElement = (name: string, categoryId: string) => {
+  const newElement: PortfolioElement = {
+    id: crypto.randomUUID(),
+    name: name.trim(),
+    categoryId,
+    createdAt: new Date().toISOString(),
+    monthlyValues: {},
+  };
+  setPortfolio((prev) => [...prev, newElement]);
+};
 
   function deleteElement(id: string) {
     setPortfolio((prev) =>
@@ -153,6 +167,7 @@ export function usePortfolio() {
 
   return {
     portfolio,
+    categories,
     year,
     setYear,
     addElement,
@@ -164,5 +179,7 @@ export function usePortfolio() {
     addAllocation,
     updateAllocation,
     deleteAllocation,
+    addCategory,
+    deleteCategory,
   };
 }

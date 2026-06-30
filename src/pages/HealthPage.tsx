@@ -29,7 +29,8 @@ export default function HealthPage() {
     deleteLog,
     getLatestLog,
     getLogsByMetric,
-    addCustomMetric 
+    addCustomMetric,
+    updateLog,
   } = useHealth();
   const { habits, logs: habitLogs } = useHabits();
 
@@ -44,6 +45,8 @@ export default function HealthPage() {
       return metric?.frequency === frequencyFilter;
     })
     .sort((a, b) => b.date.localeCompare(a.date));
+
+  const [editingLogId, setEditingLogId] = useState<string | null>(null);
 
   const [metricToDelete, setMetricToDelete] = useState<{ id: string; name: string } | null>(null);
 
@@ -445,14 +448,19 @@ const getWeekNumber = (date: Date): number => {
                   <th className="text-left py-3 px-4">Metric</th>
                   <th className="text-left py-3 px-4">Frequency</th>
                   <th className="text-left py-3 px-4">Value</th>
-                  <th className="w-10"></th> {/* Delete column */}
+                  <th className="w-20"></th>
                 </tr>
               </thead>
               <tbody>
                 {filteredLogs.map((log) => {
                   const metric = metrics.find((m) => m.id === log.metricId);
+                  const isEditing = editingLogId === log.id;
+
                   return (
-                    <tr key={log.id} className="border-b border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
+                    <tr
+                      key={log.id}
+                      className="border-b border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                    >
                       <td className="py-3 px-4">{log.date}</td>
                       <td className="py-3 px-4 font-medium">{metric?.name || "Unknown"}</td>
                       <td className="py-3 px-4">
@@ -460,17 +468,76 @@ const getWeekNumber = (date: Date): number => {
                           {metric?.frequency || "—"}
                         </span>
                       </td>
+
+                      {/* Value Cell with Edit */}
                       <td className="py-3 px-4">
-                        {typeof log.value === "object"
-                          ? `${log.value.systolic}/${log.value.diastolic}`
-                          : log.value}
-                        {metric?.unit && ` ${metric.unit}`}
+                        {isEditing ? (
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              defaultValue={
+                                typeof log.value === 'object'
+                                  ? log.value.systolic
+                                  : log.value
+                              }
+                              className="modern-input w-24"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  const newValue = Number(e.currentTarget.value);
+                                  updateLog(log.id, newValue);
+                                  setEditingLogId(null);
+                                }
+                                if (e.key === 'Escape') {
+                                  setEditingLogId(null);
+                                }
+                              }}
+                              autoFocus
+                            />
+                            <button
+                              onClick={() => {
+                                // For simplicity, we use the input's current value on blur/enter
+                                const input = document.activeElement as HTMLInputElement;
+                                if (input) {
+                                  updateLog(log.id, Number(input.value));
+                                }
+                                setEditingLogId(null);
+                              }}
+                              className="text-emerald-600 text-sm px-2"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={() => setEditingLogId(null)}
+                              className="text-zinc-400 text-sm px-2"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <span>
+                              {typeof log.value === "object"
+                                ? `${log.value.systolic}/${log.value.diastolic}`
+                                : log.value}
+                              {metric?.unit && ` ${metric.unit}`}
+                            </span>
+                            <button
+                              onClick={() => setEditingLogId(log.id)}
+                              className="text-zinc-400 hover:text-blue-500 p-1"
+                              title="Edit value"
+                            >
+                              ✎
+                            </button>
+                          </div>
+                        )}
                       </td>
+
+                      {/* Actions */}
                       <td className="py-3 px-4">
                         <button
                           onClick={() => handleDeleteLogRequest(log)}
                           className="text-zinc-400 hover:text-red-500 p-1"
-                          title="Delete this log entry"
+                          title="Delete log"
                         >
                           🗑️
                         </button>

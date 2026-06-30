@@ -28,6 +28,15 @@ export function useHealth() {
     setCustomMetrics((prev) => [...prev, newMetric]);
   };
 
+  // Update an existing log
+    const updateLog = (logId: string, newValue: any) => {
+    setLogs((prev) =>
+        prev.map((log) =>
+        log.id === logId ? { ...log, value: newValue } : log
+        )
+    );
+    };
+
   // Save or update a log
   const saveLog = (newLog: Omit<HealthLog, 'id'>) => {
     setLogs((prev) => {
@@ -76,6 +85,7 @@ const deleteCustomMetric = (metricId: string) => {
     deleteLog,
     getLogsByMetric,
     getLatestLog,
-    deleteCustomMetric
+    deleteCustomMetric,
+    updateLog,
   };
 }

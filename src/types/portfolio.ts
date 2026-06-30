@@ -1,12 +1,19 @@
+export type Category = {
+  id: string;
+  name: string;
+};
+
 export type PortfolioElement = {
   id: string;
   name: string;
+  categoryId: string;           // ← New field
   createdAt: string;
-
   monthlyValues: {
-    [month: number]: {
-      invested: number;
-      value: number;
+    [year: number]: {
+      [month: number]: {
+        invested: number;
+        value: number;
+      };
     };
   };
 };

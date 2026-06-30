@@ -3,11 +3,11 @@ import AppLayout from '../components/AppLayout';
 import YearNavigator from '../components/goals/YearNavigator';
 import AddPortfolioElementForm from '../components/finances/AddPortfolioElementForm';
 import PortfolioTable from '../components/finances/PortfolioTable';
-import PortfolioChart, { 
-  PortfolioAllocationChart,
+import PortfolioChart, {
   MortgageRemainingChart,
   MortgageExtraSavingsChart 
 } from '../components/finances/PortfolioChart';
+import PortfolioAllocationChart from '../components/finances/PortfolioAllocationChart';
 import ConfirmModal from '../components/ConfirmModal';
 import { usePortfolio } from '../hooks/usePortfolio';
 import { useMortgage } from '../hooks/useMortgage';
@@ -26,6 +26,8 @@ export default function FinancesPage() {
     addAllocation,
     updateAllocation,
     deleteAllocation,
+    categories,
+    addCategory,
   } = usePortfolio();
 
   const {
@@ -65,6 +67,21 @@ const gain = currentValue - totalInvested;
 
   const [expandedTables, setExpandedTables] = useState<Record<string, boolean>>({});
 
+// In FinancesPage.tsx - Financial Strategy section
+  const categoryValues = categories.map(category => {
+    const elementsInCategory = portfolio.filter(el => el.categoryId === category.id);
+    
+    const totalValue = elementsInCategory.reduce((sum, el) => {
+      const yearData = el.monthlyValues?.[year] || {};
+      const latestMonth = Math.max(0, ...Object.keys(yearData).map(Number));
+      return sum + (yearData[latestMonth]?.value || 0);
+    }, 0);
+
+    return {
+      name: category.name,
+      value: totalValue,
+    };
+  }).filter(cat => cat.value > 0);
 
   return (
     <AppLayout>
@@ -94,15 +111,94 @@ const gain = currentValue - totalInvested;
         <PortfolioChart portfolio={portfolio} year={year} />
       </div>
 
+
+      {/* Financial Strategy */}
+      <div className="glass-card p-8 mb-8">
+        <h2 className="text-xl font-semibold mb-6">Financial Strategy</h2>
+
+        <div className="grid lg:grid-cols-2 gap-10 items-start">
+          
+          {/* Pie Chart - Now based on Categories */}
+          <div>
+            <div className="w-full">
+              <PortfolioAllocationChart 
+                categoryValues={categoryValues} 
+              />
+            </div>
+          </div>
+
+          {/* Category Summary List */}
+          <div className="space-y-3">
+            {categoryValues.length > 0 ? (
+              categoryValues.map((cat, index) => {
+                const totalValue = categoryValues.reduce((sum, c) => sum + c.value, 0);
+                const percent = totalValue > 0 ? ((cat.value / totalValue) * 100).toFixed(1) : '0';
+
+                return (
+                  <div 
+                    key={index} 
+                    className="flex justify-between items-center p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-800/60"
+                  >
+                    <div className="font-medium">{cat.name}</div>
+                    <div className="text-right">
+                      <div className="font-semibold">€{cat.value.toLocaleString()}</div>
+                      <div className="text-xs text-zinc-500">{percent}%</div>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="text-center py-8 text-zinc-500">
+                Add categories and portfolio elements to see your strategy
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+    {/* Add Category Form */}
+
       {/* Portfolio Elements */}
+      
       <div className="glass-card p-8 mb-8">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold">Portfolio Elements</h2>
         </div>
-        <AddPortfolioElementForm onAdd={addElement} />
+            {/* Add Category Form */}
+    <div className="glass-card p-6 mb-6">
+      <h3 className="font-semibold mb-4">Add Category</h3>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          const form = e.currentTarget;
+          const input = form.elements.namedItem('categoryName') as HTMLInputElement;
+
+          if (input.value.trim()) {
+            addCategory(input.value.trim());
+            form.reset();
+          }
+        }}
+        className="flex gap-3"
+      >
+        <input
+          name="categoryName"
+          placeholder="New category name (e.g. ETFs, Stocks, Crypto)"
+          className="modern-input flex-1"
+          required
+        />
+        <button type="submit" className="modern-button">
+          Add Category
+        </button>
+      </form>
+    </div>
+        <AddPortfolioElementForm
+          onAdd={addElement}
+          categories={categories} 
+          />
         <PortfolioTable
           portfolio={portfolio}
           year={year}
+          categories={categories} 
           updateValue={updateValue}
           renameElement={renameElement}
           deleteElement={(id) => {
@@ -110,84 +206,6 @@ const gain = currentValue - totalInvested;
             if (element) setElementToDelete(element);
           }}
         />
-      </div>
-
-      {/* Financial Strategy */}
-      <div className="glass-card p-8 mb-8">
-        <h2 className="text-xl font-semibold mb-6">Financial Strategy</h2>
-
-        <div className="grid lg:grid-cols-2 gap-8 items-start">
-          
-          {/* Left: Allocation Chart */}
-          <div>
-            <div className="w-full">
-              <PortfolioAllocationChart allocations={allocations} />
-            </div>
-            <div className="mt-4 text-center">
-              <span className="text-sm text-zinc-500">Total Allocated: </span>
-              <span className={`font-semibold ${totalAllocation === 100 ? 'text-emerald-600' : 'text-amber-600'}`}>
-                {totalAllocation}%
-              </span>
-            </div>
-          </div>
-
-          {/* Right: Allocations + Add Form */}
-          <div className="space-y-4">
-            {allocations.map((alloc) => (
-              <div 
-                key={alloc.id} 
-                className="flex items-center gap-3 p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-800/60"
-              >
-                <input 
-                  value={alloc.name} 
-                  onChange={(e) => updateAllocation(alloc.id, e.target.value, alloc.percentage)} 
-                  className="modern-input flex-1" 
-                />
-                <div className="flex items-center gap-2 w-28">
-                  <input 
-                    type="number" 
-                    value={alloc.percentage} 
-                    onChange={(e) => updateAllocation(alloc.id, alloc.name, Number(e.target.value))} 
-                    className="modern-input w-20 text-center" 
-                  />
-                  <span className="text-zinc-400">%</span>
-                </div>
-                <button 
-                  onClick={() => deleteAllocation(alloc.id)} 
-                  className="text-zinc-400 hover:text-red-500 p-2"
-                >
-                  🗑️
-                </button>
-              </div>
-            ))}
-
-            {/* Add New */}
-            <div className="flex flex-col sm:flex-row gap-2 pt-2">
-              <input 
-                value={newAllocName} 
-                onChange={(e) => setNewAllocName(e.target.value)} 
-                placeholder="New allocation category..." 
-                className="modern-input flex-1"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    addAllocation(newAllocName);
-                    setNewAllocName('');
-                  }
-                }} 
-              />
-              <button 
-                onClick={() => {
-                  addAllocation(newAllocName);
-                  setNewAllocName('');
-                }} 
-                disabled={!newAllocName.trim()} 
-                className="modern-button whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Add
-              </button>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Mortgage Section */}

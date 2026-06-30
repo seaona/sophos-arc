@@ -1,9 +1,13 @@
-import type { PortfolioElement } from '../../types/portfolio';
+import React from 'react';
+import type { Category, PortfolioElement } from '../../types/portfolio';
 
 type Props = {
   portfolio: PortfolioElement[];
+  
 
   year: number;
+
+  categories: Category;
 
   updateValue: (
     id: string,
@@ -25,10 +29,11 @@ type Props = {
 
 export default function PortfolioTable({
   portfolio,
+  categories, 
   year,
   updateValue,
   renameElement,
-  deleteElement
+  deleteElement,
 }: Props) {
   const months = [
   'Jan',
@@ -45,60 +50,161 @@ export default function PortfolioTable({
   'Dec'
 ];
 
+const CATEGORY_WIDTH = "120px";
+const ELEMENT_WIDTH = "120px";
+
  return (
-  <div className="overflow-auto max-h-[600px]">
-  <table className="w-full text-sm border-collapse">
-    <thead>
-      {/* First header row */}
-      <tr>
-        <th className="sticky left-0 p-3 bg-white dark:bg-zinc-900 border-b text-left z-20" colSpan={1}>
-          Element
-        </th>
-        
-        {/* Initial */}
-        <th colSpan={2} className="p-3 bg-white dark:bg-zinc-900 border-b text-center font-semibold border-r">
-          Initial
-        </th>
+    <div className="overflow-auto max-h-[400px] border border-zinc-200 dark:border-zinc-700 rounded-2xl">
+      <table className="w-full text-sm border-collapse whitespace-nowrap">
+  <colgroup>
+    {/* Sticky columns */}
+    <col style={{ width: CATEGORY_WIDTH }} />
+    <col style={{ width: ELEMENT_WIDTH }} />
 
-        {/* Months */}
-        {months.map((monthName) => (
-          <th 
-            key={monthName} 
-            colSpan={2} 
-            className="p-3 bg-white dark:bg-zinc-900 border-b text-center font-semibold border-r"
-          >
-            {monthName}
+    {/* Initial */}
+    <col style={{ width: 120 }} />
+    <col style={{ width: 120 }} />
+
+    {/* Months */}
+    {months.map((_, i) => (
+      <React.Fragment key={i}>
+        <col style={{ width: 120 }} />
+        <col style={{ width: 120 }} />
+      </React.Fragment>
+    ))}
+  </colgroup>
+
+  <thead>
+    {/* HEADER ROW 1 */}
+    <tr>
+      <th
+        colSpan={2}
+        className="
+          sticky left-0 z-40
+          bg-white dark:bg-zinc-900
+          border-b border-r
+          text-center font-semibold p-3
+        "
+      >
+        Portfolio
+      </th>
+
+      <th
+        colSpan={2}
+        className="p-3 bg-white dark:bg-zinc-900 border-b text-center font-semibold border-r"
+      >
+        Initial
+      </th>
+
+      {months.map((month) => (
+        <th
+          key={month}
+          colSpan={2}
+          className="p-3 bg-white dark:bg-zinc-900 border-b text-center font-semibold border-r"
+        >
+          {month}
+        </th>
+      ))}
+    </tr>
+
+    {/* HEADER ROW 2 */}
+    <tr>
+      <th
+        className="
+          sticky left-0 z-50
+          bg-white dark:bg-zinc-900
+          border-b text-xs
+        "
+        style={{
+          width: CATEGORY_WIDTH,
+          minWidth: CATEGORY_WIDTH,
+        }}
+      >
+        Category
+      </th>
+
+      <th
+        className="
+          sticky z-50
+          bg-white dark:bg-zinc-900
+          border-b border-r text-xs
+        "
+        style={{
+          left: CATEGORY_WIDTH,
+          width: ELEMENT_WIDTH,
+          minWidth: ELEMENT_WIDTH,
+        }}
+      >
+        Element
+      </th>
+
+      <th className="p-2 bg-white dark:bg-zinc-900 border-b text-center text-xs">
+        Inv
+      </th>
+      <th className="p-2 bg-white dark:bg-zinc-900 border-b text-center text-xs border-r">
+        Real
+      </th>
+
+      {months.map((month) => (
+        <React.Fragment key={month}>
+          <th className="p-2 bg-white dark:bg-zinc-900 border-b text-center text-xs">
+            Inv
           </th>
-        ))}
-      </tr>
+          <th className="p-2 bg-white dark:bg-zinc-900 border-b text-center text-xs border-r">
+            Real
+          </th>
+        </React.Fragment>
+      ))}
+    </tr>
+  </thead>
+      <tbody>
+    {portfolio.map((element) => {
+      const yearData = element.monthlyValues?.[year] || {};
+      const initial = yearData[0] || { invested: 0, value: 0 };
 
-      {/* Second header row - Sub headers */}
-      <tr>
-        <th className="sticky left-0 p-2 bg-white dark:bg-zinc-900 border-b z-20"></th>
+      const categoryName =
+        categories.find((c) => c.id === element.categoryId)?.name || "—";
 
-        {/* Initial sub-headers */}
-        <th className="p-2 bg-white dark:bg-zinc-900 border-b text-center text-xs">Inv</th>
-        <th className="p-2 bg-white dark:bg-zinc-900 border-b text-center text-xs border-r">Real</th>
+      return (
+        <tr
+          key={element.id}
+          className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+        >
+          {/* =========================
+              STICKY COLUMN 1: CATEGORY
+          ========================== */}
+          <td
+            className="
+              sticky left-0 z-20
+              bg-white dark:bg-zinc-900
+              border-b border-r
+            "
+            style={{
+              width: CATEGORY_WIDTH,
+              minWidth: CATEGORY_WIDTH,
+            }}
+          >
+            <div className="px-3 py-3 text-sm text-zinc-500">
+              {categoryName}
+            </div>
+          </td>
 
-        {/* Monthly sub-headers */}
-        {months.map((monthName) => (
-          <>
-            <th key={`${monthName}-inv`} className="p-2 bg-white dark:bg-zinc-900 border-b text-center text-xs">Inv</th>
-            <th key={`${monthName}-real`} className="p-2 bg-white dark:bg-zinc-900 border-b text-center text-xs border-r">Real</th>
-          </>
-        ))}
-      </tr>
-    </thead>
-
-    <tbody>
-      {portfolio.map((element) => {
-        const yearData = element.monthlyValues?.[year] || {};
-        const initial = yearData[0] || { invested: 0, value: 0 };
-
-        return (
-          <tr key={element.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-            {/* Element Name + Delete Icon (same sticky cell) */}
-            <td className="sticky left-0 p-3 bg-white dark:bg-zinc-900 font-medium border-r z-20 flex items-center gap-2">
+          {/* =========================
+              STICKY COLUMN 2: ELEMENT
+          ========================== */}
+          <td
+            className="
+              sticky z-20
+              bg-white dark:bg-zinc-900
+              border-b border-r
+            "
+            style={{
+              left: CATEGORY_WIDTH,
+              width: ELEMENT_WIDTH,
+              minWidth: ELEMENT_WIDTH,
+            }}
+          >
+            <div className="flex items-center gap-2 px-3 py-3 font-medium">
               <button
                 onClick={() => deleteElement(element.id)}
                 className="text-zinc-400 hover:text-red-500 p-1"
@@ -106,59 +212,102 @@ export default function PortfolioTable({
               >
                 🗑️
               </button>
-              {element.name}
-            </td>
 
-            {/* Initial Inv */}
-            <td className="p-2 border-b">
-              <input
-                type="number"
-                value={initial.invested || ''}
-                onChange={(e) => updateValue(element.id, year, 0, 'invested', Number(e.target.value))}
-                className="modern-input w-24 text-center"
-              />
-            </td>
+              <span className="whitespace-nowrap">
+                {element.name}
+              </span>
+            </div>
+          </td>
 
-            {/* Initial Real */}
-            <td className="p-2 border-b border-r">
-              <input
-                type="number"
-                value={initial.value || ''}
-                onChange={(e) => updateValue(element.id, year, 0, 'value', Number(e.target.value))}
-                className="modern-input w-24 text-center"
-              />
-            </td>
+          {/* =========================
+              INITIAL COLUMNS
+          ========================== */}
+          <td className="p-2 border-b text-center">
+            <input
+              type="number"
+              value={initial.invested || ""}
+              onChange={(e) =>
+                updateValue(
+                  element.id,
+                  year,
+                  0,
+                  "invested",
+                  Number(e.target.value)
+                )
+              }
+              className="modern-input w-full min-w-[90px] text-center"
+            />
+          </td>
 
-            {/* Monthly columns */}
-            {months.map((_, index) => {
-              const month = index + 1;
-              const data = yearData[month] || { invested: 0, value: 0 };
+          <td className="p-2 border-b border-r text-center">
+            <input
+              type="number"
+              value={initial.value || ""}
+              onChange={(e) =>
+                updateValue(
+                  element.id,
+                  year,
+                  0,
+                  "value",
+                  Number(e.target.value)
+                )
+              }
+              className="modern-input w-full min-w-[90px] text-center"
+            />
+          </td>
 
-              return (
-                <>
-                  <td key={`${month}-inv`} className="p-2 border-b">
-                    <input
-                      type="number"
-                      value={data.invested || ''}
-                      onChange={(e) => updateValue(element.id, year, month, 'invested', Number(e.target.value))}
-                      className="modern-input w-24 text-center"
-                    />
-                  </td>
-                  <td key={`${month}-real`} className="p-2 border-b border-r">
-                    <input
-                      type="number"
-                      value={data.value || ''}
-                      onChange={(e) => updateValue(element.id, year, month, 'value', Number(e.target.value))}
-                      className="modern-input w-24 text-center"
-                    />
-                  </td>
-                </>
-              );
-            })}
-          </tr>
-        );
-      })}
-    </tbody>
-  </table>
+          {/* =========================
+              MONTHLY COLUMNS
+          ========================== */}
+          {months.map((_, index) => {
+            const month = index + 1;
+            const data = yearData[month] || {
+              invested: 0,
+              value: 0,
+            };
+
+            return (
+              <React.Fragment key={month}>
+                <td className="p-2 border-b text-center">
+                  <input
+                    type="number"
+                    value={data.invested || ""}
+                    onChange={(e) =>
+                      updateValue(
+                        element.id,
+                        year,
+                        month,
+                        "invested",
+                        Number(e.target.value)
+                      )
+                    }
+                    className="modern-input w-full min-w-[90px] text-center"
+                  />
+                </td>
+
+                <td className="p-2 border-b border-r text-center">
+                  <input
+                    type="number"
+                    value={data.value || ""}
+                    onChange={(e) =>
+                      updateValue(
+                        element.id,
+                        year,
+                        month,
+                        "value",
+                        Number(e.target.value)
+                      )
+                    }
+                    className="modern-input w-full min-w-[90px] text-center"
+                  />
+                </td>
+              </React.Fragment>
+            );
+          })}
+        </tr>
+      );
+    })}
+  </tbody>
+</table>
 </div>
 )};

@@ -1,29 +1,26 @@
 import { useState } from 'react';
+import type { Category } from '../../types/portfolio';
 
 type Props = {
-  onAdd: (name: string) => void;
+  onAdd: (name: string, categoryId: string) => void;
+  categories: Category[];
 };
 
-export default function AddPortfolioElementForm({
-  onAdd
-}: Props) {
-  const [name, setName] =
-    useState('');
+export default function AddPortfolioElementForm({ onAdd, categories }: Props) {
+  const [name, setName] = useState('');
+  const [categoryId, setCategoryId] = useState('');
 
-  function handleSubmit(
-    e: React.FormEvent
-  ) {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!name.trim() || !categoryId) return;
 
-    if (!name.trim()) return;
-
-    onAdd(name);
-
+    onAdd(name.trim(), categoryId);
     setName('');
-  }
+    setCategoryId('');
+  };
 
   return (
-    <form onSubmit={handleSubmit} className="mb-6">
+    <form onSubmit={handleSubmit} className="glass-card p-6 mb-8">
       <div className="flex flex-col sm:flex-row gap-3">
         <input
           value={name}
@@ -31,8 +28,23 @@ export default function AddPortfolioElementForm({
           placeholder="Portfolio element name"
           className="modern-input flex-1"
         />
-        <button type="submit" className="modern-button whitespace-nowrap">
-          Add Element
+
+        <select
+          value={categoryId}
+          onChange={(e) => setCategoryId(e.target.value)}
+          className="modern-input w-48"
+          required
+        >
+          <option value="">Select Category</option>
+          {categories.map((cat) => (
+            <option key={cat.id} value={cat.id}>
+              {cat.name}
+            </option>
+          ))}
+        </select>
+
+        <button type="submit" className="modern-button">
+          Add
         </button>
       </div>
     </form>

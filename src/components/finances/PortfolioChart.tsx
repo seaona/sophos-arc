@@ -38,6 +38,7 @@ type Props = {
   year: number;
 };
 
+
 // Reused colors
 const COLORS = [
   '#14b8a6', '#3b82f6', '#8b5cf6', '#f59e0b',
@@ -73,6 +74,7 @@ const CustomLegend = ({ payload }: any) => {
 };
 
 // ==================== MAIN PORTFOLIO CHART ====================
+
 export default function PortfolioChart({ portfolio, year }: Props) {
   const data = MONTHS.map((monthName, index) => {
     const month = index + 1;
@@ -134,50 +136,6 @@ export default function PortfolioChart({ portfolio, year }: Props) {
             />
           ))}
         </BarChart>
-      </ResponsiveContainer>
-    </div>
-  );
-}
-
-// ==================== ALLOCATION PIE CHART ====================
-export function PortfolioAllocationChart({ allocations }: AllocationChartProps) {
-  const validData = allocations
-    .filter((a) => a.percentage > 0)
-    .map((a, i) => ({
-      name: a.name,
-      value: a.percentage,
-      fill: COLORS[i % COLORS.length],
-    }));
-
-  if (validData.length === 0) {
-    return (
-      <div className="h-[320px] flex flex-col items-center justify-center text-zinc-400 border border-dashed border-zinc-300 dark:border-zinc-700 rounded-2xl">
-        <div className="text-5xl mb-3 opacity-50">📊</div>
-        <p>No allocations yet</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="w-full h-[320px]">
-      <ResponsiveContainer width="100%" height="100%">
-        <PieChart>
-          <Pie
-            data={validData}
-            cx="50%"
-            cy="50%"
-            innerRadius={80}
-            outerRadius={130}
-            dataKey="value"
-            labelLine={false}
-            label={({ name, value }) => `${name} ${value}%`}
-          >
-            {validData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={entry.fill} />
-            ))}
-          </Pie>
-          <Tooltip formatter={(value: number) => [`${value}%`, '']} />
-        </PieChart>
       </ResponsiveContainer>
     </div>
   );
