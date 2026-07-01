@@ -1,4 +1,5 @@
 // hooks/useHealth.ts
+import { useMemo } from 'react';
 import { useLocalStorage } from './useLocalStorage';
 import { DEFAULT_HEALTH_METRICS } from '../utils/healthMetrics';
 import type { HealthMetric, HealthLog } from '../types/health';
@@ -11,14 +12,25 @@ export function useHealth() {
   const [logs, setLogs] = useLocalStorage<HealthLog[]>('health-logs', []);
 
   // Combine default + custom metrics
-  const allMetrics = [...DEFAULT_HEALTH_METRICS, ...customMetrics];
+  const allMetrics = useMemo(() => {
+    return [...DEFAULT_HEALTH_METRICS, ...customMetrics];
+  }, [customMetrics]);
 
-  const activeMetrics = allMetrics.filter((m) => m.isActive);
+  // Only active ones
+  const activeMetrics = useMemo(() => {
+    return allMetrics.filter((m) => m.isActive !== false);
+  }, [allMetrics]);
 
-  const dailyMetrics = activeMetrics.filter((m) => m.frequency === 'daily');
-  const weeklyMetrics = activeMetrics.filter((m) => m.frequency === 'weekly');
+  const dailyMetrics = useMemo(() => {
+    return activeMetrics.filter((m) => m.frequency === 'daily');
+  }, [activeMetrics]);
 
-  // Add new custom metric
+  const weeklyMetrics = useMemo(() => {
+    return activeMetrics.filter((m) => m.frequency === 'weekly');
+  }, [activeMetrics]);
+
+  // ==================== METRIC ACTIONS ====================
+
   const addCustomMetric = (metric: Omit<HealthMetric, 'id' | 'isActive'>) => {
     const newMetric: HealthMetric = {
       ...metric,
@@ -28,30 +40,49 @@ export function useHealth() {
     setCustomMetrics((prev) => [...prev, newMetric]);
   };
 
-  // Update an existing log
-    const updateLog = (logId: string, newValue: any) => {
-    setLogs((prev) =>
-        prev.map((log) =>
-        log.id === logId ? { ...log, value: newValue } : log
-        )
-    );
-    };
+  /**
+   * Deletes a metric completely (works for both custom and default)
+   * - Removes all logs for this metric
+   * - Removes the metric from customMetrics (if it exists)
+   */
+  const deleteMetric = (metricId: string) => {
+    // Remove all logs belonging to this metric
+    setLogs((prev) => prev.filter((log) => log.metricId !== metricId));
 
-  // Save or update a log
+    // Remove from custom metrics (if it's a custom one)
+    setCustomMetrics((prev) => prev.filter((m) => m.id !== metricId));
+  };
+
+  // ==================== LOG ACTIONS ====================
+
   const saveLog = (newLog: Omit<HealthLog, 'id'>) => {
     setLogs((prev) => {
-      const existing = prev.findIndex(
+      const existingIndex = prev.findIndex(
         (log) => log.metricId === newLog.metricId && log.date === newLog.date
       );
 
-      if (existing !== -1) {
+      if (existingIndex !== -1) {
         const updated = [...prev];
-        updated[existing] = { ...updated[existing], ...newLog };
+        updated[existingIndex] = { ...updated[existingIndex], ...newLog };
         return updated;
       }
       return [...prev, { ...newLog, id: crypto.randomUUID() }];
     });
   };
+
+  const updateLog = (logId: string, newValue: any) => {
+    setLogs((prev) =>
+      prev.map((log) =>
+        log.id === logId ? { ...log, value: newValue } : log
+      )
+    );
+  };
+
+  const deleteLog = (logId: string) => {
+    setLogs((prev) => prev.filter((log) => log.id !== logId));
+  };
+
+  // ==================== GETTERS ====================
 
   const getLogsByMetric = (metricId: string) =>
     logs.filter((log) => log.metricId === metricId);
@@ -61,19 +92,7 @@ export function useHealth() {
       .filter((log) => log.metricId === metricId)
       .sort((a, b) => b.date.localeCompare(a.date))[0];
 
-
-    const deleteLog = (logId: string) => {
-    setLogs((prev) => prev.filter((log) => log.id !== logId));
-    };
-
-    // Delete a custom metric completely (definition + all its logs)
-const deleteCustomMetric = (metricId: string) => {
-  // Remove all logs for this metric
-  setLogs((prev) => prev.filter((log) => log.metricId !== metricId));
-
-  // Remove the metric from custom metrics
-  setCustomMetrics((prev) => prev.filter((m) => m.id !== metricId));
-};
+  // ==================== RETURN ====================
 
   return {
     metrics: activeMetrics,
@@ -82,10 +101,10 @@ const deleteCustomMetric = (metricId: string) => {
     logs,
     addCustomMetric,
     saveLog,
+    updateLog,
     deleteLog,
     getLogsByMetric,
     getLatestLog,
-    deleteCustomMetric,
-    updateLog,
+    deleteMetric,           // ← Renamed from deleteCustomMetric
   };
 }
