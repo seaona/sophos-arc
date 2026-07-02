@@ -16,3 +16,11 @@ export type HealthLog = {
   date: string;           // Format: "2026-06-21"
   notes?: string;
 };
+
+export type Supplement = {
+  id: string;
+  name: string;
+  startDate: string;      // format: YYYY-MM-DD
+  endDate?: string;       // optional
+  createdAt: string;
+};

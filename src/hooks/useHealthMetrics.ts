@@ -1,3 +1,4 @@
+// hooks/useHealthMetrics.ts
 import { useState, useMemo } from 'react';
 import { useHealth } from './useHealth';
 import { getCurrentWeekNumber, getWeekNumber } from '../utils/health';
@@ -6,8 +7,8 @@ export function useHealthMetrics() {
   const {
     metrics,
     logs: healthLogs,
-    dailyMetrics: rawDailyMetrics,
-    weeklyMetrics: rawWeeklyMetrics,
+    dailyMetrics,
+    weeklyMetrics,
     getLogsByMetric,
   } = useHealth();
 
@@ -17,54 +18,46 @@ export function useHealthMetrics() {
   const currentWeek = getCurrentWeekNumber();
   const currentYear = new Date().getFullYear();
 
-  // Use the raw values from useHealth (they are already memoized)
-  const dailyMetrics = rawDailyMetrics;
-  const weeklyMetrics = rawWeeklyMetrics;
-
-  // ==================== LOGGED STATUS ====================
-  const loggedTodayMetricIds = useMemo(() => {
-    return new Set(
-      healthLogs
-        .filter((log) => log.date === today)
-        .map((log) => log.metricId)
-    );
+  // ==================== REACTIVE LOGGED STATUS ====================
+  const loggedTodayIds = useMemo(() => {
+    return new Set(healthLogs.filter(log => log.date === today).map(log => log.metricId));
   }, [healthLogs, today]);
 
-  const loggedThisWeekMetricIds = useMemo(() => {
+  const loggedThisWeekIds = useMemo(() => {
     return new Set(
       healthLogs
-        .filter((log) => {
-          const logDate = new Date(log.date);
-          return getWeekNumber(logDate) === currentWeek && logDate.getFullYear() === currentYear;
+        .filter(log => {
+          const d = new Date(log.date);
+          return getWeekNumber(d) === currentWeek && d.getFullYear() === currentYear;
         })
-        .map((log) => log.metricId)
+        .map(log => log.metricId)
     );
   }, [healthLogs, currentWeek, currentYear]);
 
-  const isLoggedToday = (metricId: string) => loggedTodayMetricIds.has(metricId);
-  const isLoggedThisWeek = (metricId: string) => loggedThisWeekMetricIds.has(metricId);
+  const isLoggedToday = (metricId: string) => loggedTodayIds.has(metricId);
+  const isLoggedThisWeek = (metricId: string) => loggedThisWeekIds.has(metricId);
 
   // ==================== DERIVED VALUES ====================
-  const dailyProgress = `${dailyMetrics.filter((m) => isLoggedToday(m.id)).length}/${dailyMetrics.length}`;
-  const weeklyProgress = `${weeklyMetrics.filter((m) => isLoggedThisWeek(m.id)).length}/${weeklyMetrics.length}`;
+  const dailyProgress = `${dailyMetrics.filter(m => isLoggedToday(m.id)).length}/${dailyMetrics.length}`;
+  const weeklyProgress = `${weeklyMetrics.filter(m => isLoggedThisWeek(m.id)).length}/${weeklyMetrics.length}`;
 
   const filteredLogs = useMemo(() => {
-    return healthLogs
-      .filter((log) => {
+    return [...healthLogs]
+      .filter(log => {
         if (frequencyFilter === "all") return true;
-        const metric = metrics.find((m) => m.id === log.metricId);
+        const metric = metrics.find(m => m.id === log.metricId);
         return metric?.frequency === frequencyFilter;
       })
       .sort((a, b) => b.date.localeCompare(a.date));
   }, [healthLogs, frequencyFilter, metrics]);
 
   const unloggedDaily = useMemo(() => {
-    return dailyMetrics.filter((m) => !isLoggedToday(m.id));
-  }, [dailyMetrics, loggedTodayMetricIds]);
+    return dailyMetrics.filter(m => !isLoggedToday(m.id));
+  }, [dailyMetrics, loggedTodayIds]);
 
   const unloggedWeekly = useMemo(() => {
-    return weeklyMetrics.filter((m) => !isLoggedThisWeek(m.id));
-  }, [weeklyMetrics, loggedThisWeekMetricIds]);
+    return weeklyMetrics.filter(m => !isLoggedThisWeek(m.id));
+  }, [weeklyMetrics, loggedThisWeekIds]);
 
   return {
     frequencyFilter,
@@ -76,7 +69,5 @@ export function useHealthMetrics() {
     weeklyProgress,
     unloggedDaily,
     unloggedWeekly,
-    dailyMetrics,      // ← Now exposed
-    weeklyMetrics,     // ← Now exposed
   };
 }

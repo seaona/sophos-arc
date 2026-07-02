@@ -8,8 +8,8 @@ type Props = {
 };
 
 export default function MetricStatusOverview({
-  dailyMetrics,
-  weeklyMetrics,
+  dailyMetrics = [],           // ← Add default empty array
+  weeklyMetrics = [],          // ← Add default empty array
   isLoggedToday,
   isLoggedThisWeek,
 }: Props) {
@@ -22,17 +22,21 @@ export default function MetricStatusOverview({
         <div>
           <h3 className="font-semibold text-sm text-zinc-500 tracking-wide mb-4">DAILY METRICS</h3>
           <div className="space-y-2">
-            {dailyMetrics.map((metric) => {
-              const logged = isLoggedToday(metric.id);
-              return (
-                <div key={metric.id} className="flex justify-between items-center p-3 bg-zinc-50 dark:bg-zinc-800/60 rounded-xl">
-                  <span className="font-medium">{metric.name}</span>
-                  <span className={logged ? "text-emerald-600 font-medium" : "text-amber-600"}>
-                    {logged ? "✓ Logged today" : "Not logged yet"}
-                  </span>
-                </div>
-              );
-            })}
+            {dailyMetrics.length > 0 ? (
+              dailyMetrics.map((metric) => {
+                const logged = isLoggedToday(metric.id);
+                return (
+                  <div key={metric.id} className="flex justify-between items-center p-3 bg-zinc-50 dark:bg-zinc-800/60 rounded-xl">
+                    <span className="font-medium">{metric.name}</span>
+                    <span className={logged ? "text-emerald-600 font-medium" : "text-amber-600"}>
+                      {logged ? "✓ Logged today" : "Not logged yet"}
+                    </span>
+                  </div>
+                );
+              })
+            ) : (
+              <p className="text-sm text-zinc-500">No daily metrics yet.</p>
+            )}
           </div>
         </div>
 
@@ -40,17 +44,21 @@ export default function MetricStatusOverview({
         <div>
           <h3 className="font-semibold text-sm text-zinc-500 tracking-wide mb-4">WEEKLY METRICS</h3>
           <div className="space-y-2">
-            {weeklyMetrics.map((metric) => {
-              const logged = isLoggedThisWeek(metric.id);
-              return (
-                <div key={metric.id} className="flex justify-between items-center p-3 bg-zinc-50 dark:bg-zinc-800/60 rounded-xl">
-                  <span className="font-medium">{metric.name}</span>
-                  <span className={logged ? "text-emerald-600 font-medium" : "text-amber-600"}>
-                    {logged ? "✓ Logged this week" : "Not logged yet"}
-                  </span>
-                </div>
-              );
-            })}
+            {weeklyMetrics.length > 0 ? (
+              weeklyMetrics.map((metric) => {
+                const logged = isLoggedThisWeek(metric.id);
+                return (
+                  <div key={metric.id} className="flex justify-between items-center p-3 bg-zinc-50 dark:bg-zinc-800/60 rounded-xl">
+                    <span className="font-medium">{metric.name}</span>
+                    <span className={logged ? "text-emerald-600 font-medium" : "text-amber-600"}>
+                      {logged ? "✓ Logged this week" : "Not logged yet"}
+                    </span>
+                  </div>
+                );
+              })
+            ) : (
+              <p className="text-sm text-zinc-500">No weekly metrics yet.</p>
+            )}
           </div>
         </div>
       </div>

@@ -21,6 +21,8 @@ export default function AddPortfolioElementForm({ onAdd, categories }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="glass-card p-6 mb-8">
+      <h3 className="font-semibold mb-4">Add Portfolio Element</h3>
+
       <div className="flex flex-col sm:flex-row gap-3">
         <input
           value={name}

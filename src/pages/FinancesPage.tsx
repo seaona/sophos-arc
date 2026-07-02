@@ -11,6 +11,7 @@ import PortfolioAllocationChart from '../components/finances/PortfolioAllocation
 import ConfirmModal from '../components/ConfirmModal';
 import { usePortfolio } from '../hooks/usePortfolio';
 import { useMortgage } from '../hooks/useMortgage';
+import AddCategoryForm from '../components/finances/AddCategoryForm';
 
 export default function FinancesPage() {
   const {
@@ -156,45 +157,21 @@ const gain = currentValue - totalInvested;
         </div>
       </div>
 
-    {/* Add Category Form */}
-
       {/* Portfolio Elements */}
       
       <div className="glass-card p-8 mb-8">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold">Portfolio Elements</h2>
         </div>
-            {/* Add Category Form */}
-    <div className="glass-card p-6 mb-6">
-      <h3 className="font-semibold mb-4">Add Category</h3>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          const form = e.currentTarget;
-          const input = form.elements.namedItem('categoryName') as HTMLInputElement;
 
-          if (input.value.trim()) {
-            addCategory(input.value.trim());
-            form.reset();
-          }
-        }}
-        className="flex gap-3"
-      >
-        <input
-          name="categoryName"
-          placeholder="New category name (e.g. ETFs, Stocks, Crypto)"
-          className="modern-input flex-1"
-          required
-        />
-        <button type="submit" className="modern-button">
-          Add Category
-        </button>
-      </form>
-    </div>
-        <AddPortfolioElementForm
-          onAdd={addElement}
+        {/* Add Category Form */}
+        <AddCategoryForm onAdd={addCategory} />
+
+        {/* Add Portfolio Element Form */}
+        <AddPortfolioElementForm 
+          onAdd={addElement} 
           categories={categories} 
-          />
+        />
         <PortfolioTable
           portfolio={portfolio}
           year={year}

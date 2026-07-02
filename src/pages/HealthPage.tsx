@@ -1,11 +1,7 @@
 import { useState } from 'react';
 import AppLayout from '../components/AppLayout';
-import { useGoals } from '../hooks/useGoals';
 import { useHealth } from '../hooks/useHealth';
-import { useHabits } from '../hooks/useHabits';
-import GoalCard from '../components/goals/GoalCard';
 import MetricStatusOverview from '../components/health/MetricStatusOverview';
-import MetricLogger from '../components/health/MetricLogger';
 import ConfirmModal from '../components/ConfirmModal';
 
 import {
@@ -21,54 +17,51 @@ import {
 import {
   prepareDailyChartData,
   prepareWeeklyChartData,
-  getWeekRange,
 } from '../utils/health';
 
 import { useHealthMetrics } from '../hooks/useHealthMetrics';
+import DailyMetricsLogger from '../components/health/DailyMetricsLogger';
+import WeeklyMetricsLogger from '../components/health/WeeklyMetricsLogger';
+import { useSupplements } from '../hooks/useSupplements';
+import SupplementTimeline from '../components/health/SupplementTimeline';
+import AddSupplementForm from '../components/health/AddSupplementForm';
+import SupplementList from '../components/health/SupplementList';
+import HealthLogsTable from '../components/health/HealthLogsTable';
+import DailyWeeklyCheckins from '../components/health/DailyWeeklyCheckins';
 
 export default function HealthPage() {
-  const { goals, addMilestone, toggleMilestone, deleteMilestone, updateMilestone } = useGoals();
 const { 
   metrics, 
   logs: healthLogs,
   saveLog, 
   deleteMetric,
   deleteLog,
-  getLatestLog,
   getLogsByMetric,
+  getLatestLog,
   addCustomMetric,
   updateLog,
 } = useHealth();
 
-// Get these from the metrics hook instead:
 const {
   frequencyFilter,
   setFrequencyFilter,
   filteredLogs,
   isLoggedToday,
   isLoggedThisWeek,
-  dailyProgress,
-  weeklyProgress,
   unloggedDaily,
   unloggedWeekly,
   dailyMetrics,      // ← Get from here
   weeklyMetrics,     // ← Get from here
 } = useHealthMetrics();
-  const { habits, logs: habitLogs } = useHabits();
-
-  const healthGoals = goals.filter((goal) => goal.type === 'health');
 
 
   const [editingLogId, setEditingLogId] = useState<string | null>(null);
   const [metricToDelete, setMetricToDelete] = useState<{ id: string; name: string } | null>(null);
   const [logToDelete, setLogToDelete] = useState<{ id: string; metricName: string; date: string } | null>(null);
 
-  // ==================== HANDLERS ====================
+  const { supplements, addSupplement, updateSupplement, deleteSupplement } = useSupplements();
 
-  const handleDeleteRequest = (metricId: string) => {
-    const metric = metrics.find((m) => m.id === metricId);
-    if (metric) setMetricToDelete({ id: metricId, name: metric.name });
-  };
+  // ==================== HANDLERS ====================
 
   const confirmDelete = () => {
     if (metricToDelete) deleteMetric(metricToDelete.id);
@@ -109,31 +102,14 @@ const {
       </div>
 
       {/* Status Overview */}
-      <MetricStatusOverview
-        dailyMetrics={dailyMetrics}           // You need to get these from useHealth
+      <DailyWeeklyCheckins
+        dailyMetrics={dailyMetrics}
         weeklyMetrics={weeklyMetrics}
         isLoggedToday={isLoggedToday}
         isLoggedThisWeek={isLoggedThisWeek}
+        onSave={handleSaveLog}
+        getLatestLog={getLatestLog}
       />
-
-      {/* Logging Forms */}
-      <div className="space-y-8 mb-8">
-        <MetricLogger
-          title="Log Daily Metrics"
-          metrics={unloggedDaily}
-          getLatestLog={getLatestLog}
-          onSave={handleSaveLog}
-          onDelete={handleDeleteRequest}
-        />
-
-        <MetricLogger
-          title="Log Weekly Metrics"
-          metrics={unloggedWeekly}
-          getLatestLog={getLatestLog}
-          onSave={handleSaveLog}
-          onDelete={handleDeleteRequest}
-        />
-      </div>
 
       {/* Add Custom Metric Form */}
       <div className="glass-card p-6 mb-8">
@@ -160,9 +136,10 @@ const {
           <button type="submit" className="modern-button">Add Metric</button>
         </form>
       </div>
+      
 
       {/* Trends */}
-      <div className="glass-card p-8 mb-8">
+        <div className="glass-card p-8 mb-8">
         <h2 className="text-xl font-semibold mb-6">Trends</h2>
 
         {/* Daily Trends */}
@@ -232,95 +209,29 @@ const {
               })}
           </div>
         </div>
-      </div>
+        </div>
+
 
       {/* All Health Logs */}
-      <div className="glass-card p-8 mb-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
-          <h2 className="text-xl font-semibold">All Health Logs</h2>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-zinc-500">Filter by frequency:</span>
-            <select value={frequencyFilter} onChange={(e) => setFrequencyFilter(e.target.value)} className="modern-input w-40 text-sm">
-              <option value="all">All</option>
-              <option value="daily">Daily</option>
-              <option value="weekly">Weekly</option>
-            </select>
-          </div>
-        </div>
+      <HealthLogsTable
+        logs={filteredLogs}
+        metrics={metrics}
+        frequencyFilter={frequencyFilter}
+        onFrequencyFilterChange={setFrequencyFilter}
+        editingLogId={editingLogId}
+        onEditingChange={setEditingLogId}
+        onUpdateLog={updateLog}
+        onDeleteRequest={handleDeleteLogRequest}
+      />
 
-        {filteredLogs.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-zinc-200 dark:border-zinc-700">
-                  <th className="text-left py-3 px-4">Date</th>
-                  <th className="text-left py-3 px-4">Metric</th>
-                  <th className="text-left py-3 px-4">Frequency</th>
-                  <th className="text-left py-3 px-4">Value</th>
-                  <th className="w-20"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredLogs.map((log) => {
-                  const metric = metrics.find((m) => m.id === log.metricId);
-                  const isEditing = editingLogId === log.id;
-
-                  return (
-                    <tr key={log.id} className="border-b border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-                      <td className="py-3 px-4">{log.date}</td>
-                      <td className="py-3 px-4 font-medium">{metric?.name || "Unknown"}</td>
-                      <td className="py-3 px-4">
-                        <span className="inline-block px-2 py-0.5 text-xs rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
-                          {metric?.frequency || "—"}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        {isEditing ? (
-                          <div className="flex items-center gap-2">
-                            <input type="number" defaultValue={typeof log.value === 'object' ? log.value.systolic : log.value} className="modern-input w-24" onKeyDown={(e) => {
-                              if (e.key === 'Enter') { updateLog(log.id, Number(e.currentTarget.value)); setEditingLogId(null); }
-                              if (e.key === 'Escape') setEditingLogId(null);
-                            }} autoFocus />
-                            <button onClick={() => setEditingLogId(null)} className="text-emerald-600 text-sm">Save</button>
-                            <button onClick={() => setEditingLogId(null)} className="text-zinc-400 text-sm">Cancel</button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            <span>{typeof log.value === "object" ? `${log.value.systolic}/${log.value.diastolic}` : log.value}{metric?.unit && ` ${metric.unit}`}</span>
-                            <button onClick={() => setEditingLogId(log.id)} className="text-zinc-400 hover:text-blue-500 p-1">✎</button>
-                          </div>
-                        )}
-                      </td>
-                      <td className="py-3 px-4">
-                        <button onClick={() => handleDeleteLogRequest(log)} className="text-zinc-400 hover:text-red-500 p-1">🗑️</button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <p className="text-zinc-400 italic">No logs found for the selected filter.</p>
-        )}
-      </div>
-
-      {/* Health Goals */}
       <div className="mb-8">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold">Health Goals</h2>
-          <button onClick={() => window.location.href = '/goals'} className="modern-button text-sm">+ New Health Goal</button>
-        </div>
-
-        {healthGoals.length > 0 ? (
-          <div className="space-y-6">
-            {healthGoals.map((goal) => (
-              <GoalCard key={goal.id} goal={goal} habits={habits} logs={habitLogs} onAddMilestone={addMilestone} onToggleMilestone={toggleMilestone} onDeleteMilestone={deleteMilestone} onUpdateMilestone={updateMilestone} />
-            ))}
-          </div>
-        ) : (
-          <div className="glass-card p-8 text-center text-zinc-500">No health goals yet.</div>
-        )}
+        <SupplementTimeline supplements={supplements} />
+        <AddSupplementForm onAdd={addSupplement} />
+        <SupplementList 
+          supplements={supplements} 
+          onUpdate={updateSupplement} 
+          onDelete={deleteSupplement} 
+        />
       </div>
 
       {/* Modals */}
