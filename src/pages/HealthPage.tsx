@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import AppLayout from '../components/AppLayout';
 import { useHealth } from '../hooks/useHealth';
-import MetricStatusOverview from '../components/health/MetricStatusOverview';
+import { useSupplements } from '../hooks/useSupplements';
 import ConfirmModal from '../components/ConfirmModal';
 
 import {
@@ -19,51 +19,40 @@ import {
   prepareWeeklyChartData,
 } from '../utils/health';
 
-import { useHealthMetrics } from '../hooks/useHealthMetrics';
-import DailyMetricsLogger from '../components/health/DailyMetricsLogger';
-import WeeklyMetricsLogger from '../components/health/WeeklyMetricsLogger';
-import { useSupplements } from '../hooks/useSupplements';
+import DailyWeeklyCheckins from '../components/health/DailyWeeklyCheckins';
+import HealthLogsTable from '../components/health/HealthLogsTable';
 import SupplementTimeline from '../components/health/SupplementTimeline';
 import AddSupplementForm from '../components/health/AddSupplementForm';
 import SupplementList from '../components/health/SupplementList';
-import HealthLogsTable from '../components/health/HealthLogsTable';
-import DailyWeeklyCheckins from '../components/health/DailyWeeklyCheckins';
 
 export default function HealthPage() {
-const { 
-  metrics, 
-  logs: healthLogs,
-  saveLog, 
-  deleteMetric,
-  deleteLog,
-  getLogsByMetric,
-  getLatestLog,
-  addCustomMetric,
-  updateLog,
-} = useHealth();
+  const {
+    metrics,
+    dailyMetrics,
+    weeklyMetrics,
+    logs: healthLogs,
+    frequencyFilter,
+    setFrequencyFilter,
+    filteredLogs,
+    isLoggedToday,
+    isLoggedThisWeek,
+    saveLog,
+    deleteMetric,
+    deleteLog,
+    getLogsByMetric,
+    getLatestLog,
+    addCustomMetric,
+    updateLog,
+  } = useHealth();
 
-const {
-  frequencyFilter,
-  setFrequencyFilter,
-  filteredLogs,
-  isLoggedToday,
-  isLoggedThisWeek,
-  unloggedDaily,
-  unloggedWeekly,
-  dailyMetrics,      // ← Get from here
-  weeklyMetrics,     // ← Get from here
-} = useHealthMetrics();
-
+  const { supplements, addSupplement, updateSupplement, deleteSupplement } = useSupplements();
 
   const [editingLogId, setEditingLogId] = useState<string | null>(null);
   const [metricToDelete, setMetricToDelete] = useState<{ id: string; name: string } | null>(null);
   const [logToDelete, setLogToDelete] = useState<{ id: string; metricName: string; date: string } | null>(null);
 
-  const { supplements, addSupplement, updateSupplement, deleteSupplement } = useSupplements();
-
   // ==================== HANDLERS ====================
-
-  const confirmDelete = () => {
+  const confirmDeleteMetric = () => {
     if (metricToDelete) deleteMetric(metricToDelete.id);
     setMetricToDelete(null);
   };
@@ -90,6 +79,12 @@ const {
     });
   };
 
+  const handleDeleteMetricRequest = (metricId: string) => {
+    const metric = metrics.find((m) => m.id === metricId);
+    if (metric) {
+      setMetricToDelete({ id: metricId, name: metric.name });
+    }
+  };
   // ==================== RENDER ====================
 
   return (
@@ -101,7 +96,7 @@ const {
         </p>
       </div>
 
-      {/* Status Overview */}
+      {/* Consolidated Check-ins Section */}
       <DailyWeeklyCheckins
         dailyMetrics={dailyMetrics}
         weeklyMetrics={weeklyMetrics}
@@ -109,9 +104,10 @@ const {
         isLoggedThisWeek={isLoggedThisWeek}
         onSave={handleSaveLog}
         getLatestLog={getLatestLog}
+        onDeleteMetric={handleDeleteMetricRequest}  
       />
 
-      {/* Add Custom Metric Form */}
+      {/* Add Custom Metric */}
       <div className="glass-card p-6 mb-8">
         <h3 className="font-semibold mb-4">Add Custom Metric</h3>
         <form
@@ -136,18 +132,16 @@ const {
           <button type="submit" className="modern-button">Add Metric</button>
         </form>
       </div>
-      
 
       {/* Trends */}
-        <div className="glass-card p-8 mb-8">
+      <div className="glass-card p-8 mb-8">
         <h2 className="text-xl font-semibold mb-6">Trends</h2>
 
-        {/* Daily Trends */}
         <div className="mb-10">
           <h3 className="font-semibold mb-4 text-sm text-zinc-500 tracking-wide">DAILY TRENDS</h3>
           <div className="grid lg:grid-cols-2 gap-8">
             {metrics
-              .filter((metric) => getLogsByMetric(metric.id).length > 0 && metric.frequency === 'daily')
+              .filter((m) => getLogsByMetric(m.id).length > 0 && m.frequency === 'daily')
               .map((metric) => {
                 const chartData = prepareDailyChartData(healthLogs, metric.id);
                 return (
@@ -176,12 +170,11 @@ const {
           </div>
         </div>
 
-        {/* Weekly Trends */}
         <div>
           <h3 className="font-semibold mb-4 text-sm text-zinc-500 tracking-wide">WEEKLY TRENDS</h3>
           <div className="grid lg:grid-cols-2 gap-8">
             {metrics
-              .filter((metric) => getLogsByMetric(metric.id).length > 0 && metric.frequency === 'weekly')
+              .filter((m) => getLogsByMetric(m.id).length > 0 && m.frequency === 'weekly')
               .map((metric) => {
                 const chartData = prepareWeeklyChartData(healthLogs, metric.id);
                 return (
@@ -209,8 +202,7 @@ const {
               })}
           </div>
         </div>
-        </div>
-
+      </div>
 
       {/* All Health Logs */}
       <HealthLogsTable
@@ -224,6 +216,7 @@ const {
         onDeleteRequest={handleDeleteLogRequest}
       />
 
+      {/* Supplements Section */}
       <div className="mb-8">
         <SupplementTimeline supplements={supplements} />
         <AddSupplementForm onAdd={addSupplement} />
@@ -235,8 +228,20 @@ const {
       </div>
 
       {/* Modals */}
-      <ConfirmModal open={metricToDelete !== null} title="Delete Metric Data" message={`Delete "${metricToDelete?.name}" and all its data? This cannot be undone.`} onCancel={() => setMetricToDelete(null)} onConfirm={confirmDelete} />
-      <ConfirmModal open={logToDelete !== null} title="Delete Log Entry" message={`Delete the log for "${logToDelete?.metricName}" on ${logToDelete?.date}?`} onCancel={() => setLogToDelete(null)} onConfirm={confirmDeleteLog} />
+      <ConfirmModal
+        open={metricToDelete !== null}
+        title="Delete Metric"
+        message={`Delete "${metricToDelete?.name}" and all its data?`}
+        onCancel={() => setMetricToDelete(null)}
+        onConfirm={confirmDeleteMetric}
+      />
+      <ConfirmModal
+        open={logToDelete !== null}
+        title="Delete Log Entry"
+        message={`Delete the log for "${logToDelete?.metricName}" on ${logToDelete?.date}?`}
+        onCancel={() => setLogToDelete(null)}
+        onConfirm={confirmDeleteLog}
+      />
     </AppLayout>
   );
 }
