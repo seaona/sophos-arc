@@ -7,16 +7,24 @@ export function useSupplements() {
     []
   );
 
-  const addSupplement = (name: string, startDate: string, endDate?: string) => {
+const addSupplement = (
+    name: string, 
+    startDate: string, 
+    endDate?: string, 
+    frequency?: string, 
+    quantity?: string
+  ) => {
     const newSupplement: Supplement = {
       id: crypto.randomUUID(),
       name: name.trim(),
       startDate,
       endDate: endDate || undefined,
+      frequency: frequency || undefined,
+      quantity: quantity || undefined,
       createdAt: new Date().toISOString(),
     };
     setSupplements((prev) => [...prev, newSupplement]);
-  };
+  }; 
 
   const updateSupplement = (id: string, updates: Partial<Supplement>) => {
     setSupplements((prev) =>

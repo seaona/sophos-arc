@@ -20,7 +20,9 @@ export type HealthLog = {
 export type Supplement = {
   id: string;
   name: string;
-  startDate: string;      // format: YYYY-MM-DD
-  endDate?: string;       // optional
+  startDate: string;
+  frequency?: string;
+  quantity?: string;
+  endDate?: string;
   createdAt: string;
 };

@@ -8,11 +8,24 @@ import type { HealthMetric, HealthLog } from '../types/health';
 export function useHealth() {
   const [customMetrics, setCustomMetrics] = useLocalStorage<HealthMetric[]>('health-metrics', []);
   const [logs, setLogs] = useLocalStorage<HealthLog[]>('health-logs', []);
+  const [hiddenDefaultMetrics, setHiddenDefaultMetrics] = useLocalStorage<string[]>(
+  'health-hidden-default-metrics',
+  []
+);
 
   const [frequencyFilter, setFrequencyFilter] = useState<"all" | "daily" | "weekly">("all");
 
   const allMetrics = useMemo(() => [...DEFAULT_HEALTH_METRICS, ...customMetrics], [customMetrics]);
-  const activeMetrics = useMemo(() => allMetrics.filter((m) => m.isActive !== false), [allMetrics]);
+  const activeMetrics = useMemo(() => {
+  // Filter out hidden default metrics
+    const visibleDefaults = DEFAULT_HEALTH_METRICS.filter(
+      (m) => !hiddenDefaultMetrics.includes(m.id)
+    );
+    
+    return [...visibleDefaults, ...customMetrics].filter(
+      (m) => m.isActive !== false
+    );
+  }, [customMetrics, hiddenDefaultMetrics]);
 
   const dailyMetrics = useMemo(() => activeMetrics.filter((m) => m.frequency === 'daily'), [activeMetrics]);
   const weeklyMetrics = useMemo(() => activeMetrics.filter((m) => m.frequency === 'weekly'), [activeMetrics]);
@@ -88,9 +101,25 @@ export function useHealth() {
   };
 
   const deleteMetric = (metricId: string) => {
-    setLogs((prev) => prev.filter((log) => log.metricId !== metricId));
+  // Always remove all logs for this metric
+  setLogs((prev) => prev.filter((log) => log.metricId !== metricId));
+
+  // Check if it's a default metric
+  const isDefaultMetric = DEFAULT_HEALTH_METRICS.some(
+    (m) => m.id === metricId
+  );
+
+  if (isDefaultMetric) {
+    // Hide default metric (instead of deleting it from the constant)
+    setHiddenDefaultMetrics((prev) => {
+      if (prev.includes(metricId)) return prev;
+      return [...prev, metricId];
+    });
+  } else {
+    // Remove custom metric completely
     setCustomMetrics((prev) => prev.filter((m) => m.id !== metricId));
-  };
+  }
+};
 
   const getLogsByMetric = (metricId: string) => logs.filter((log) => log.metricId === metricId);
 
