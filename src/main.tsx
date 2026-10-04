@@ -12,6 +12,7 @@ import FinancesPage from './pages/FinancesPage';
 import HealthPage from './pages/HealthPage';
 import GoalsPage from './pages/GoalsPage';
 import HabitsPage from './pages/HabitsPage';
+import SchedulePage from './pages/SchedulePage';
 
 ReactDOM.createRoot(
   document.getElementById('root')!
@@ -42,6 +43,11 @@ ReactDOM.createRoot(
         <Route
           path="/goals"
           element={<GoalsPage />}
+        />
+
+        <Route
+          path="/schedule"
+          element={<SchedulePage />}
         />
       </Routes>
     </BrowserRouter>

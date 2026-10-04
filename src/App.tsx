@@ -7,6 +7,7 @@ import HomePage from './pages/HomePage';
 import HabitsPage from './pages/HabitsPage';
 import GoalsPage from './pages/GoalsPage';
 import FinancesPage from './pages/FinancesPage';
+import SchedulePage from './pages/SchedulePage';
 
 export default function App() {
   return (
@@ -30,6 +31,12 @@ export default function App() {
         path="/finances"
         element={<FinancesPage />}
       />
+
+      <Route
+        path="/schedule"
+        element={<SchedulePage/>}
+      />  
+
     </Routes>
   );
 }

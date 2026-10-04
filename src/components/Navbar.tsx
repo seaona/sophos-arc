@@ -92,6 +92,20 @@ export default function Navbar() {
           </NavLink>
 
           <NavLink
+            to="/schedule"
+            onClick={() => setOpen(false)}
+            className={({ isActive }) =>
+              `block px-5 py-3 transition-colors ${
+                isActive
+                  ? 'bg-zinc-100 dark:bg-zinc-800 font-medium'
+                  : 'hover:bg-zinc-100 dark:hover:bg-zinc-800'
+              }`
+            }
+          >
+            Schedule
+          </NavLink>
+
+          <NavLink
             to="/finances"
             onClick={() => setOpen(false)}
             className={({ isActive }) =>
