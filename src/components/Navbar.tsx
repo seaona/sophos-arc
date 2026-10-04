@@ -132,6 +132,20 @@ export default function Navbar() {
           >
             Health
           </NavLink>
+
+          <NavLink
+            to="/menus"
+            onClick={() => setOpen(false)}
+            className={({ isActive }) =>
+              `block px-5 py-3 transition-colors ${
+                isActive
+                  ? 'bg-zinc-100 dark:bg-zinc-800 font-medium'
+                  : 'hover:bg-zinc-100 dark:hover:bg-zinc-800'
+              }`
+            }
+          >
+            Menus
+          </NavLink>    
         </div>
       )}
     </div>

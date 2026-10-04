@@ -8,6 +8,7 @@ import HabitsPage from './pages/HabitsPage';
 import GoalsPage from './pages/GoalsPage';
 import FinancesPage from './pages/FinancesPage';
 import SchedulePage from './pages/SchedulePage';
+import MenusPage from './pages/MenusPage';
 
 export default function App() {
   return (
@@ -36,6 +37,12 @@ export default function App() {
         path="/schedule"
         element={<SchedulePage/>}
       />  
+
+      <Route
+        path="/menus" 
+        element={<MenusPage />}
+      />
+
 
     </Routes>
   );

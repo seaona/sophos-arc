@@ -42,3 +42,40 @@ export function formatDate(
     .toISOString()
     .split('T')[0];
 }
+
+/** Split calendar days into weeks of 7 (Mon–Sun). Pads trailing nulls. */
+export function getCalendarWeeks(
+  year: number,
+  month: number
+): (number | null)[][] {
+  const days = getCalendarDays(year, month);
+  const weeks: (number | null)[][] = [];
+
+  for (let i = 0; i < days.length; i += 7) {
+    const week = days.slice(i, i + 7);
+    while (week.length < 7) week.push(null);
+    weeks.push(week);
+  }
+
+  return weeks;
+}
+
+/**
+ * Monday of the week containing this date, as "YYYY-MM-DD".
+ * day can be null for padding cells — pass the first in-month day of the week instead.
+ */
+export function getWeekId(
+  year: number,
+  month: number,
+  day: number
+): string {
+  const d = new Date(year, month, day);
+  const jsDay = d.getDay(); // 0=Sun
+  const mondayOffset = jsDay === 0 ? -6 : 1 - jsDay;
+  const monday = new Date(year, month, day + mondayOffset);
+  return formatDate(
+    monday.getFullYear(),
+    monday.getMonth(),
+    monday.getDate()
+  );
+}

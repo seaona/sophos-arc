@@ -13,6 +13,7 @@ import HealthPage from './pages/HealthPage';
 import GoalsPage from './pages/GoalsPage';
 import HabitsPage from './pages/HabitsPage';
 import SchedulePage from './pages/SchedulePage';
+import MenusPage from './pages/MenusPage';
 
 ReactDOM.createRoot(
   document.getElementById('root')!
@@ -48,6 +49,11 @@ ReactDOM.createRoot(
         <Route
           path="/schedule"
           element={<SchedulePage />}
+        />
+
+        <Route
+          path="/menus"
+          element={<MenusPage />}
         />
       </Routes>
     </BrowserRouter>
