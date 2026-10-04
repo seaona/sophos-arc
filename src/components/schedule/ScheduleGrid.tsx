@@ -9,7 +9,12 @@ type Props = {
   onDayClick: (day: DayOfWeek) => void;
   onUpdateBlock: (
     id: string,
-    updates: Partial<Pick<ScheduleBlock, 'title' | 'startMinutes' | 'durationMinutes' | 'color' | 'day'>>
+    updates: Partial<
+      Pick<
+        ScheduleBlock,
+        'title' | 'startMinutes' | 'durationMinutes' | 'color' | 'day'
+      >
+    >
   ) => void;
   onDeleteBlock: (id: string) => void;
 };
@@ -28,6 +33,66 @@ function formatHour(h: number) {
   return `${h.toString().padStart(2, '0')}:00`;
 }
 
+/**
+ * Layout overlapping blocks side-by-side.
+ * Returns each block with a column index and total columns for its overlap group.
+ */
+function layoutOverlaps(dayBlocks: ScheduleBlock[]) {
+  const sorted = [...dayBlocks].sort(
+    (a, b) =>
+      a.startMinutes - b.startMinutes ||
+      b.durationMinutes - a.durationMinutes
+  );
+
+  // First pass: assign the lowest free column
+  const colOf: Record<string, number> = {};
+  const active: { id: string; end: number; col: number }[] = [];
+
+  for (const block of sorted) {
+    const start = block.startMinutes;
+    const end = start + block.durationMinutes;
+
+    // Drop finished intervals
+    for (let i = active.length - 1; i >= 0; i--) {
+      if (active[i].end <= start) active.splice(i, 1);
+    }
+
+    const used = new Set(active.map((a) => a.col));
+    let col = 0;
+    while (used.has(col)) col++;
+
+    colOf[block.id] = col;
+    active.push({ id: block.id, end, col });
+  }
+
+  // Second pass: cols = max column among all overlapping blocks + 1
+  const colsOf: Record<string, number> = {};
+
+  for (const block of sorted) {
+    const start = block.startMinutes;
+    const end = start + block.durationMinutes;
+    let maxCol = colOf[block.id];
+
+    for (const other of sorted) {
+      if (other.id === block.id) continue;
+      const oStart = other.startMinutes;
+      const oEnd = oStart + other.durationMinutes;
+      // overlap?
+      if (start < oEnd && oStart < end) {
+        maxCol = Math.max(maxCol, colOf[other.id]);
+      }
+    }
+
+    colsOf[block.id] = maxCol + 1;
+  }
+
+  return sorted.map((block) => ({
+    block,
+    col: colOf[block.id],
+    cols: colsOf[block.id],
+  }));
+}
+
 export default function ScheduleGrid({
   days,
   blocks,
@@ -37,14 +102,14 @@ export default function ScheduleGrid({
 }: Props) {
   return (
     <div className="min-w-[720px]">
-      {/* Header: times + days */}
+      {/* Header: empty corner + day labels */}
       <div
         className="grid gap-px"
         style={{
           gridTemplateColumns: `64px repeat(${days.length}, 1fr)`,
         }}
       >
-        <div className="h-10" /> {/* empty corner */}
+        <div className="h-10" />
         {days.map((d) => (
           <button
             key={d.key}
@@ -86,6 +151,7 @@ export default function ScheduleGrid({
         {/* Day columns */}
         {days.map((d) => {
           const dayBlocks = blocks.filter((b) => b.day === d.key);
+          const laidOut = layoutOverlaps(dayBlocks);
 
           return (
             <div
@@ -107,25 +173,32 @@ export default function ScheduleGrid({
                 />
               ))}
 
-              {/* Blocks */}
-              {dayBlocks.map((block) => {
+              {/* Blocks (side-by-side when overlapping) */}
+              {laidOut.map(({ block, col, cols }) => {
                 const top =
                   ((block.startMinutes - START_HOUR * 60) / TOTAL_MINUTES) *
                   100;
                 const height =
                   (block.durationMinutes / TOTAL_MINUTES) * 100;
 
-                // Clamp so blocks outside visible window still show partially
                 if (top + height < 0 || top > 100) return null;
+
+                const widthPct = 100 / cols;
+                const leftPct = col * widthPct;
 
                 return (
                   <div
                     key={block.id}
-                    className="absolute left-1 right-1 z-10"
+                    className="absolute z-10 px-0.5"
                     style={{
                       top: `${Math.max(0, top)}%`,
-                      height: `${Math.min(height, 100 - Math.max(0, top))}%`,
+                      height: `${Math.min(
+                        height,
+                        100 - Math.max(0, top)
+                      )}%`,
                       minHeight: 28,
+                      left: `${leftPct}%`,
+                      width: `${widthPct}%`,
                     }}
                     onClick={(e) => e.stopPropagation()}
                   >

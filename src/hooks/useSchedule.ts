@@ -21,7 +21,7 @@ export function useSchedule() {
       day,
       title: title.trim(),
       startMinutes,
-      durationMinutes: Math.max(15, durationMinutes),
+      durationMinutes: Math.min(480, Math.max(15, durationMinutes)),
       color: color || '#71717a',
     };
 

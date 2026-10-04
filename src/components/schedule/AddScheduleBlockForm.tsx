@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { DayOfWeek } from '../../types/schedule';
+import { SCHEDULE_COLORS } from '../../types/schedule';
 
 type DayOption = { key: DayOfWeek; label: string };
 
@@ -29,7 +30,7 @@ export default function AddScheduleBlockForm({
   const [day, setDay] = useState<DayOfWeek>(defaultDay);
   const [startTime, setStartTime] = useState('09:00');
   const [duration, setDuration] = useState(60);
-  const [color, setColor] = useState('#71717a');
+  const [color, setColor] = useState(SCHEDULE_COLORS[0].hex);
 
   useEffect(() => {
     setDay(defaultDay);
@@ -76,27 +77,41 @@ export default function AddScheduleBlockForm({
         />
 
         <select
-          value={duration}
-          onChange={(e) => setDuration(Number(e.target.value))}
-          className="modern-input w-full sm:w-36"
-        >
-          <option value={15}>15 min</option>
-          <option value={30}>30 min</option>
-          <option value={45}>45 min</option>
-          <option value={60}>1 hour</option>
-          <option value={90}>1.5 hours</option>
-          <option value={120}>2 hours</option>
-          <option value={180}>3 hours</option>
-          <option value={240}>4 hours</option>
-        </select>
+            value={duration}
+            onChange={(e) => setDuration(Number(e.target.value))}
+            className="modern-input w-full sm:w-36"
+            >
+            <option value={15}>15 min</option>
+            <option value={30}>30 min</option>
+            <option value={45}>45 min</option>
+            <option value={60}>1 hour</option>
+            <option value={90}>1.5 hours</option>
+            <option value={120}>2 hours</option>
+            <option value={180}>3 hours</option>
+            <option value={240}>4 hours</option>
+            <option value={300}>5 hours</option>
+            <option value={360}>6 hours</option>
+            <option value={420}>7 hours</option>
+            <option value={480}>8 hours</option>
+            </select>
 
-        <input
-          type="color"
-          value={color}
-          onChange={(e) => setColor(e.target.value)}
-          className="h-12 w-14 rounded-2xl border border-zinc-300 dark:border-zinc-700 cursor-pointer bg-transparent"
-          title="Block color"
-        />
+        <div className="flex items-center gap-1.5 flex-wrap">
+        {SCHEDULE_COLORS.map((c) => (
+            <button
+            key={c.id}
+            type="button"
+            title={c.label}
+            onClick={() => setColor(c.hex)}
+            className={`
+                h-8 w-8 rounded-full border-2 transition-transform
+                ${color === c.hex
+                ? 'border-zinc-900 dark:border-zinc-100 scale-110'
+                : 'border-transparent hover:scale-105'}
+            `}
+            style={{ backgroundColor: c.hex }}
+            />
+        ))}
+        </div>
 
         <button type="submit" className="modern-button whitespace-nowrap">
           Add Block
